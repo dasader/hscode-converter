@@ -20,15 +20,23 @@ def get_settings() -> Settings:
     return Settings()
 
 
-def get_pipeline(settings: Settings) -> ClassificationPipeline:
-    return ClassificationPipeline(
-        keyword_extractor=KeywordExtractor(settings.openai_api_key),
-        vector_search=VectorSearchService(settings.openai_api_key, settings.chroma_db_path),
-        reranker=Reranker(settings.openai_api_key),
-        vector_search_limit=settings.vector_search_limit,
-        similarity_threshold=settings.similarity_threshold,
-        pipeline_timeout=settings.pipeline_timeout,
-    )
+_pipeline_instance: ClassificationPipeline | None = None
+
+
+def get_pipeline(settings: Settings | None = None) -> ClassificationPipeline:
+    global _pipeline_instance
+    if _pipeline_instance is None:
+        if settings is None:
+            settings = get_settings()
+        _pipeline_instance = ClassificationPipeline(
+            keyword_extractor=KeywordExtractor(settings.openai_api_key),
+            vector_search=VectorSearchService(settings.openai_api_key, settings.chroma_db_path),
+            reranker=Reranker(settings.openai_api_key),
+            vector_search_limit=settings.vector_search_limit,
+            similarity_threshold=settings.similarity_threshold,
+            pipeline_timeout=settings.pipeline_timeout,
+        )
+    return _pipeline_instance
 
 
 def ensure_data_dirs(settings: Settings) -> None:

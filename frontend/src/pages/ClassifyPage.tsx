@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { classify } from '../api/client';
 import type { ClassifyResponse } from '../api/types';
 import ResultTable from '../components/ResultTable';
@@ -10,6 +11,24 @@ export default function ClassifyPage() {
   const [step, setStep] = useState('');
   const [response, setResponse] = useState<ClassifyResponse | null>(null);
   const [error, setError] = useState('');
+  const [dataStatus, setDataStatus] = useState<{ state: string; message: string } | null>(null);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const { data } = await axios.get('/api/v1/data/status');
+        setDataStatus(data);
+        if (data.state !== 'ready' && data.state !== 'error' && data.state !== 'no_data') {
+          setTimeout(checkStatus, 3000);
+        }
+      } catch {
+        setTimeout(checkStatus, 3000);
+      }
+    };
+    checkStatus();
+  }, []);
+
+  const isReady = dataStatus?.state === 'ready';
 
   const handleSubmit = async () => {
     if (description.trim().length < 10) {
@@ -36,6 +55,23 @@ export default function ClassifyPage() {
       <h1>HSCode Connector</h1>
       <p>R&D 기술 설명을 입력하면 관련 HSK 코드를 찾아드립니다.</p>
 
+      {dataStatus && !isReady && (
+        <div style={{
+          padding: 16, marginBottom: 16, borderRadius: 8,
+          background: dataStatus.state === 'error' ? '#ffebee' : '#fff3e0',
+          border: `1px solid ${dataStatus.state === 'error' ? '#ef9a9a' : '#ffcc80'}`,
+        }}>
+          {dataStatus.state === 'loading' && '📂 '}
+          {dataStatus.state === 'embedding' && '🔄 '}
+          {dataStatus.state === 'error' && '❌ '}
+          {dataStatus.state === 'no_data' && '📁 '}
+          {dataStatus.message}
+          {(dataStatus.state === 'loading' || dataStatus.state === 'embedding') && (
+            <span style={{ marginLeft: 8, color: '#888' }}>서버가 준비되면 자동으로 활성화됩니다.</span>
+          )}
+        </div>
+      )}
+
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -57,8 +93,8 @@ export default function ClassifyPage() {
             style={{ marginLeft: 8 }}
           />
         </label>
-        <button onClick={handleSubmit} disabled={loading} style={{ padding: '8px 24px' }}>
-          {loading ? step : '분류하기'}
+        <button onClick={handleSubmit} disabled={loading || !isReady} style={{ padding: '8px 24px' }}>
+          {loading ? step : isReady ? '분류하기' : '데이터 준비 중...'}
         </button>
       </div>
 

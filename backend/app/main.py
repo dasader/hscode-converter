@@ -1,6 +1,8 @@
+import asyncio
 import glob
 import os
 import sqlite3
+import threading
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,10 +10,14 @@ from app.api.routes import router, ensure_data_dirs
 from app.core.config import Settings
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+# 데이터 준비 상태 추적
+_data_ready = threading.Event()
+_loading_status = {"state": "idle", "message": ""}
 
 
 def _db_has_data(db_path: str) -> bool:
-    """SQLite DB에 hsk_codes 테이블이 있고 데이터가 있는지 확인"""
     if not os.path.exists(db_path):
         return False
     try:
@@ -23,34 +29,61 @@ def _db_has_data(db_path: str) -> bool:
         return False
 
 
-def _auto_load_excel(settings: Settings) -> None:
-    """data/ 폴더에 엑셀 파일이 있고 DB가 비어있으면 자동 로드"""
-    if _db_has_data(settings.sqlite_db_path):
-        logger.info("HSK 데이터가 이미 존재합니다. 자동 로드를 건너뜁니다.")
-        return
+def _chroma_has_data(chroma_path: str) -> bool:
+    try:
+        import chromadb
+        client = chromadb.PersistentClient(path=chroma_path)
+        collection = client.get_collection("hsk_codes")
+        return collection.count() > 0
+    except Exception:
+        return False
 
-    # data/ 폴더에서 .xlsx 파일 찾기 (가장 최신 파일 사용)
-    pattern = os.path.join(settings.excel_dir, "*.xlsx")
-    xlsx_files = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)
-    if not xlsx_files:
-        logger.warning(f"자동 로드할 엑셀 파일이 없습니다. {settings.excel_dir}/ 폴더에 관세청 HS부호 엑셀 파일을 넣어주세요.")
-        return
 
-    excel_path = xlsx_files[0]
-    logger.info(f"HSK 데이터 자동 로드 시작: {excel_path}")
+def _auto_load_sync(settings: Settings) -> None:
+    """백그라운드 스레드에서 실행: 엑셀 로드 + 임베딩 생성"""
+    global _loading_status
+    try:
+        db_ok = _db_has_data(settings.sqlite_db_path)
+        chroma_ok = _chroma_has_data(settings.chroma_db_path)
 
-    from app.data.crawler import HskCrawler
-    from app.data.embedder import HskEmbedder
+        if db_ok and chroma_ok:
+            logger.info("HSK 데이터와 임베딩이 이미 존재합니다.")
+            _loading_status = {"state": "ready", "message": "데이터 준비 완료"}
+            _data_ready.set()
+            return
 
-    crawler = HskCrawler()
-    records = crawler.load_from_excel(excel_path)
-    crawler.save_to_sqlite(records, settings.sqlite_db_path, source_file=excel_path)
-    logger.info(f"SQLite 저장 완료: {len(records)}건")
+        pattern = os.path.join(settings.excel_dir, "*.xlsx")
+        xlsx_files = sorted(glob.glob(pattern), key=os.path.getmtime, reverse=True)
+        if not xlsx_files:
+            logger.warning(f"자동 로드할 엑셀 파일이 없습니다. {settings.excel_dir}/ 폴더에 관세청 HS부호 엑셀 파일을 넣어주세요.")
+            _loading_status = {"state": "no_data", "message": "엑셀 파일 없음. data/ 폴더에 파일을 넣어주세요."}
+            return
 
-    logger.info("임베딩 생성 시작 (최초 실행 시 수 분 소요)...")
-    embedder = HskEmbedder(settings.openai_api_key, settings.chroma_db_path)
-    embedder.embed_from_sqlite(settings.sqlite_db_path)
-    logger.info("임베딩 생성 완료. 서비스 준비됨.")
+        excel_path = xlsx_files[0]
+
+        if not db_ok:
+            _loading_status = {"state": "loading", "message": f"엑셀 로드 중: {os.path.basename(excel_path)}"}
+            logger.info(f"HSK 데이터 로드 시작: {excel_path}")
+            from app.data.crawler import HskCrawler
+            crawler = HskCrawler()
+            records = crawler.load_from_excel(excel_path)
+            crawler.save_to_sqlite(records, settings.sqlite_db_path, source_file=excel_path)
+            logger.info(f"SQLite 저장 완료: {len(records)}건")
+
+        if not chroma_ok:
+            _loading_status = {"state": "embedding", "message": "임베딩 생성 중 (수 분 소요)..."}
+            logger.info("임베딩 생성 시작...")
+            from app.data.embedder import HskEmbedder
+            embedder = HskEmbedder(settings.openai_api_key, settings.chroma_db_path)
+            embedder.embed_from_sqlite(settings.sqlite_db_path)
+            logger.info("임베딩 생성 완료.")
+
+        _loading_status = {"state": "ready", "message": "데이터 준비 완료"}
+        _data_ready.set()
+
+    except Exception as e:
+        logger.error(f"자동 로드 실패: {e}", exc_info=True)
+        _loading_status = {"state": "error", "message": str(e)}
 
 
 def create_app() -> FastAPI:
@@ -63,13 +96,19 @@ def create_app() -> FastAPI:
         try:
             settings = Settings()
             ensure_data_dirs(settings)
-            _auto_load_excel(settings)
+            # 백그라운드 스레드에서 데이터 로드 (서버는 즉시 시작)
+            thread = threading.Thread(target=_auto_load_sync, args=(settings,), daemon=True)
+            thread.start()
         except Exception as e:
-            logger.error(f"시작 시 자동 로드 실패: {e}")
+            logger.error(f"시작 실패: {e}")
 
     @app.get("/health")
     async def health():
-        return {"status": "ok"}
+        return {"status": "ok", "data": _loading_status}
+
+    @app.get("/api/v1/data/status")
+    async def data_status():
+        return _loading_status
 
     return app
 

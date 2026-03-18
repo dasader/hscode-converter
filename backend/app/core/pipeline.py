@@ -34,20 +34,20 @@ class ClassificationPipeline:
         self.similarity_threshold = similarity_threshold
         self.pipeline_timeout = pipeline_timeout
 
-    async def classify(self, description: str, top_n: int = 5, on_step: Callable[[PipelineStep], None] | None = None) -> PipelineResult:
-        return await asyncio.wait_for(self._classify_impl(description, top_n, on_step), timeout=self.pipeline_timeout)
+    async def classify(self, description: str, top_n: int = 5, model: str = "chatgpt-5.4-mini", on_step: Callable[[PipelineStep], None] | None = None) -> PipelineResult:
+        return await asyncio.wait_for(self._classify_impl(description, top_n, model, on_step), timeout=self.pipeline_timeout)
 
-    async def _classify_impl(self, description: str, top_n: int = 5, on_step: Callable[[PipelineStep], None] | None = None) -> PipelineResult:
+    async def _classify_impl(self, description: str, top_n: int = 5, model: str = "chatgpt-5.4-mini", on_step: Callable[[PipelineStep], None] | None = None) -> PipelineResult:
         start = time.time()
         if on_step:
             on_step(PipelineStep.KEYWORD_EXTRACTION)
-        keywords = await self.keyword_extractor.extract(description)
+        keywords = await self.keyword_extractor.extract(description, model=model)
         if on_step:
             on_step(PipelineStep.VECTOR_SEARCH)
         candidates = self.vector_search.search(keywords, limit=self.vector_search_limit, threshold=self.similarity_threshold)
         if on_step:
             on_step(PipelineStep.RERANKING)
-        results = await self.reranker.rerank(description, candidates, top_n)
+        results = await self.reranker.rerank(description, candidates, top_n, model=model)
         elapsed_ms = int((time.time() - start) * 1000)
         logger.info(f"파이프라인 완료: {elapsed_ms}ms")
         return PipelineResult(keywords=keywords, results=results, processing_time_ms=elapsed_ms)

@@ -15,6 +15,12 @@ SYSTEM_PROMPT = """당신은 HS 코드 분류 전문가입니다.
 결과는 JSON 배열로만 반환하세요:
 [{"code": "코드", "confidence": 0.0~1.0, "reason": "선정 사유"}, ...]"""
 
+MODEL_MAP = {
+    "chatgpt-5.4-nano": "gpt-4o-mini",
+    "chatgpt-5.4-mini": "gpt-4o-mini",
+    "chatgpt-5.4": "gpt-4o",
+}
+
 
 class Reranker:
     def __init__(self, openai_api_key: str):
@@ -39,14 +45,15 @@ class Reranker:
             logger.warning(f"리랭킹 응답 JSON 파싱 실패: {raw[:200]}")
         return []
 
-    async def rerank(self, description: str, candidates: list[SearchCandidate], top_n: int, max_retries: int = 2) -> list[dict]:
+    async def rerank(self, description: str, candidates: list[SearchCandidate], top_n: int, model: str = "chatgpt-5.4-mini", max_retries: int = 2) -> list[dict]:
+        openai_model = MODEL_MAP.get(model, "gpt-4o-mini")
         candidates_text = self.build_candidates_text(candidates)
         user_prompt = f"## R&D 기술 설명\n{description}\n\n## 후보 HSK 코드 목록\n{candidates_text}\n\n위 기술 설명과 가장 관련 있는 HSK 코드를 최대 {top_n}개 선정하세요."
         last_error = None
         for attempt in range(max_retries + 1):
             try:
                 response = await self.client.chat.completions.create(
-                    model="gpt-4o",
+                    model=openai_model,
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user_prompt}],
                     temperature=0.1,
                 )

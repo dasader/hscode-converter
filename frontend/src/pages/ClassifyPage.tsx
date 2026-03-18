@@ -5,9 +5,17 @@ import type { ClassifyResponse } from '../api/types';
 import ResultTable from '../components/ResultTable';
 import './ClassifyPage.css';
 
+const MODEL_OPTIONS = [
+  { value: 'chatgpt-5.4-nano', label: 'GPT-5.4 Nano (빠름)' },
+  { value: 'chatgpt-5.4-mini', label: 'GPT-5.4 Mini (균형)' },
+  { value: 'chatgpt-5.4',      label: 'GPT-5.4 (정확)' },
+];
+
 export default function ClassifyPage() {
   const [description, setDescription] = useState('');
   const [topN, setTopN] = useState(5);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0);
+  const [model, setModel] = useState('chatgpt-5.4-mini');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ClassifyResponse | null>(null);
   const [error, setError] = useState('');
@@ -40,7 +48,7 @@ export default function ClassifyPage() {
     setError('');
     setResponse(null);
     try {
-      const result = await classify({ description, top_n: topN });
+      const result = await classify({ description, top_n: topN, model });
       setResponse(result);
     } catch (e: any) {
       setError(e.response?.data?.detail || '분류 중 오류가 발생했습니다');
@@ -48,6 +56,12 @@ export default function ClassifyPage() {
       setLoading(false);
     }
   };
+
+  const filteredResults = response
+    ? response.results.filter(r => r.confidence * 100 >= confidenceThreshold)
+    : null;
+
+  const sliderPct = confidenceThreshold;
 
   return (
     <div className="classify-page">
@@ -110,6 +124,35 @@ export default function ClassifyPage() {
                 ))}
               </div>
             </div>
+
+            <div className="confidence-control">
+              <label className="topn-label">최소 신뢰도</label>
+              <input
+                type="range"
+                className="confidence-slider"
+                min={0}
+                max={100}
+                step={10}
+                value={confidenceThreshold}
+                onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
+                style={{ '--slider-pct': `${sliderPct}%` } as React.CSSProperties}
+              />
+              <span className="confidence-value">{confidenceThreshold}%</span>
+            </div>
+
+            <div className="model-control">
+              <label className="topn-label">모델</label>
+              <select
+                className="model-selector"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+              >
+                {MODEL_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
             <button
               className={`submit-btn ${loading ? 'loading' : ''}`}
               onClick={handleSubmit}
@@ -157,12 +200,12 @@ export default function ClassifyPage() {
               <span>리랭킹</span>
             </div>
           </div>
-          <p className="pipeline-note">GPT-4o가 기술 설명을 분석하고 있습니다...</p>
+          <p className="pipeline-note">AI가 기술 설명을 분석하고 있습니다...</p>
         </div>
       )}
 
       {/* Results */}
-      {response && (
+      {response && filteredResults && (
         <section className="results-section">
           <div className="results-meta">
             <div className="meta-item">
@@ -178,7 +221,7 @@ export default function ClassifyPage() {
               <span className="stat-label">처리 시간</span>
             </div>
           </div>
-          <ResultTable results={response.results} onCodeClick={(code) => alert(`상세 보기: ${code}`)} />
+          <ResultTable results={filteredResults} onCodeClick={(code) => alert(`상세 보기: ${code}`)} />
         </section>
       )}
     </div>

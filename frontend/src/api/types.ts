@@ -1,6 +1,7 @@
 export interface ClassifyRequest {
   description: string;
   top_n: number;
+  model?: string;
 }
 
 export interface ClassifyResult {

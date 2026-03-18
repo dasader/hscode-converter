@@ -9,6 +9,12 @@ SYSTEM_PROMPT = """당신은 R&D 기술 설명에서 관련 무역 상품을 추
 직접 언급되지 않았더라도 해당 기술로 생산되거나 사용되는 파생 제품도 포함하세요.
 결과는 JSON 배열 형식으로만 반환하세요. 예: ["양극재", "cathode material", "리튬이온 배터리"]"""
 
+MODEL_MAP = {
+    "chatgpt-5.4-nano": "gpt-4o-mini",
+    "chatgpt-5.4-mini": "gpt-4o-mini",
+    "chatgpt-5.4": "gpt-4o",
+}
+
 
 class KeywordExtractor:
     def __init__(self, openai_api_key: str):
@@ -30,12 +36,13 @@ class KeywordExtractor:
         keywords = [k.strip().strip('"').strip("'") for k in raw.replace("\n", ",").split(",")]
         return [k for k in keywords if k]
 
-    async def extract(self, description: str, max_retries: int = 2) -> list[str]:
+    async def extract(self, description: str, model: str = "chatgpt-5.4-mini", max_retries: int = 2) -> list[str]:
+        openai_model = MODEL_MAP.get(model, "gpt-4o-mini")
         last_error = None
         for attempt in range(max_retries + 1):
             try:
                 response = await self.client.chat.completions.create(
-                    model="gpt-4o",
+                    model=openai_model,
                     messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": self.build_prompt(description)}],
                     temperature=0.2,
                 )

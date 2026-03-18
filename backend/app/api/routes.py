@@ -40,7 +40,7 @@ def ensure_data_dirs(settings: Settings) -> None:
 async def classify(request: ClassifyRequest):
     settings = get_settings()
     pipeline = get_pipeline(settings)
-    result = await pipeline.classify(request.description, request.top_n)
+    result = await pipeline.classify(request.description, request.top_n, request.model)
     conn = sqlite3.connect(settings.sqlite_db_path)
     cursor = conn.cursor()
     classify_results = []

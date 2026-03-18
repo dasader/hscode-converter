@@ -3,9 +3,10 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(6, 8, 13, 0.85);
-  backdrop-filter: blur(20px) saturate(1.5);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(1.2);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .nav-inner {
@@ -33,7 +34,7 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent), #0d9488);
+  background: linear-gradient(135deg, var(--accent), #0f766e);
   display: flex;
   align-items: center;
   justify-content: center;

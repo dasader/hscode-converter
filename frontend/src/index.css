@@ -27,7 +27,7 @@
   --text-muted: #868e96;
   --text-inverse: #ffffff;
 
-  --font-body: 'Outfit', system-ui, sans-serif;
+  --font-body: 'Outfit', 'Noto Sans KR', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   --radius-sm: 6px;

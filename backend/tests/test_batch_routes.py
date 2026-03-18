@@ -23,7 +23,8 @@ def excel_file(tmp_path):
 @pytest.fixture
 def client():
     from app.main import app
-    return TestClient(app)
+    with TestClient(app) as c:
+        yield c
 
 
 def test_template_download(client):

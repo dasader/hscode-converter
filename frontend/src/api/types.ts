@@ -33,3 +33,36 @@ export interface HskSearchResult {
   results: HskCodeDetail[];
   total: number;
 }
+
+export interface BatchUploadResponse {
+  job_id: string;
+  total_items: number;
+  status: string;
+}
+
+export interface BatchJob {
+  job_id: string;
+  file_name: string;
+  status: string;
+  total_items: number;
+  completed_items: number;
+  failed_items: number;
+  top_n: number;
+  confidence_threshold: number | null;
+  model: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface BatchProgressEvent {
+  type: 'progress' | 'item_done' | 'complete' | 'heartbeat';
+  completed?: number;
+  failed?: number;
+  total?: number;
+  percent?: number;
+  row_index?: number;
+  status?: string;
+  hsk_code_1?: string;
+  confidence_1?: number;
+  error?: string;
+}

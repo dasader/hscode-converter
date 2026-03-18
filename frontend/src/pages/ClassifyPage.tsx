@@ -3,6 +3,7 @@ import axios from 'axios';
 import { classify } from '../api/client';
 import type { ClassifyResponse } from '../api/types';
 import ResultTable from '../components/ResultTable';
+import BatchTab from '../components/BatchTab';
 import './ClassifyPage.css';
 
 const MODEL_OPTIONS = [
@@ -12,6 +13,7 @@ const MODEL_OPTIONS = [
 ];
 
 export default function ClassifyPage() {
+  const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single');
   const [description, setDescription] = useState('');
   const [topN, setTopN] = useState(5);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
@@ -94,135 +96,147 @@ export default function ClassifyPage() {
         </div>
       )}
 
-      {/* Input section */}
-      <section className="input-section">
-        <div className="input-card">
-          <div className="input-header">
-            <label className="input-label">기술 설명</label>
-            <span className="char-count">{charCount} / 2,000</span>
-          </div>
-          <textarea
-            className="input-textarea"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="분석할 R&D 기술을 설명해주세요...&#10;&#10;예: 리튬이온 배터리 양극재 제조를 위한 니켈 코발트 망간 합성 기술"
-            rows={6}
-            maxLength={2000}
-          />
-          <div className="input-footer">
-            <div className="topn-control">
-              <label className="topn-label">결과 수</label>
-              <div className="topn-selector">
-                {[3, 5, 10, 15, 20].map(n => (
-                  <button
-                    key={n}
-                    className={`topn-btn ${topN === n ? 'active' : ''}`}
-                    onClick={() => setTopN(n)}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* Tab selector */}
+      <div className="tab-selector">
+        <button className={`tab-btn ${activeTab === 'single' ? 'active' : ''}`} onClick={() => setActiveTab('single')}>단건 분류</button>
+        <button className={`tab-btn ${activeTab === 'batch' ? 'active' : ''}`} onClick={() => setActiveTab('batch')}>배치 분류</button>
+      </div>
 
-            <div className="confidence-control">
-              <label className="topn-label">최소 신뢰도</label>
-              <input
-                type="range"
-                className="confidence-slider"
-                min={0}
-                max={100}
-                step={10}
-                value={confidenceThreshold}
-                onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
-                style={{ '--slider-pct': `${sliderPct}%` } as React.CSSProperties}
+      {activeTab === 'single' ? (
+        <>
+          {/* Input section */}
+          <section className="input-section">
+            <div className="input-card">
+              <div className="input-header">
+                <label className="input-label">기술 설명</label>
+                <span className="char-count">{charCount} / 2,000</span>
+              </div>
+              <textarea
+                className="input-textarea"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="분석할 R&D 기술을 설명해주세요...&#10;&#10;예: 리튬이온 배터리 양극재 제조를 위한 니켈 코발트 망간 합성 기술"
+                rows={6}
+                maxLength={2000}
               />
-              <span className="confidence-value">{confidenceThreshold}%</span>
-            </div>
+              <div className="input-footer">
+                <div className="topn-control">
+                  <label className="topn-label">결과 수</label>
+                  <div className="topn-selector">
+                    {[3, 5, 10, 15, 20].map(n => (
+                      <button
+                        key={n}
+                        className={`topn-btn ${topN === n ? 'active' : ''}`}
+                        onClick={() => setTopN(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="model-control">
-              <label className="topn-label">모델</label>
-              <select
-                className="model-selector"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-              >
-                {MODEL_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+                <div className="confidence-control">
+                  <label className="topn-label">최소 신뢰도</label>
+                  <input
+                    type="range"
+                    className="confidence-slider"
+                    min={0}
+                    max={100}
+                    step={10}
+                    value={confidenceThreshold}
+                    onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
+                    style={{ '--slider-pct': `${sliderPct}%` } as React.CSSProperties}
+                  />
+                  <span className="confidence-value">{confidenceThreshold}%</span>
+                </div>
 
-            <button
-              className={`submit-btn ${loading ? 'loading' : ''}`}
-              onClick={handleSubmit}
-              disabled={loading || !isReady}
-            >
-              {loading ? (
-                <>
-                  <span className="submit-spinner" />
-                  분석 중...
-                </>
-              ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-                  </svg>
-                  분류하기
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </section>
+                <div className="model-control">
+                  <label className="topn-label">모델</label>
+                  <select
+                    className="model-selector"
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                  >
+                    {MODEL_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
 
-      {/* Error */}
-      {error && (
-        <div className="error-msg">{error}</div>
-      )}
-
-      {/* Pipeline indicator */}
-      {loading && (
-        <div className="pipeline-indicator">
-          <div className="pipeline-steps">
-            <div className="pipeline-step active">
-              <div className="step-dot" />
-              <span>키워드 추출</span>
-            </div>
-            <div className="pipeline-line" />
-            <div className="pipeline-step">
-              <div className="step-dot" />
-              <span>벡터 검색</span>
-            </div>
-            <div className="pipeline-line" />
-            <div className="pipeline-step">
-              <div className="step-dot" />
-              <span>리랭킹</span>
-            </div>
-          </div>
-          <p className="pipeline-note">AI가 기술 설명을 분석하고 있습니다...</p>
-        </div>
-      )}
-
-      {/* Results */}
-      {response && filteredResults && (
-        <section className="results-section">
-          <div className="results-meta">
-            <div className="meta-item">
-              <span className="meta-label">추출 키워드</span>
-              <div className="keyword-tags">
-                {response.keywords_extracted.map((kw, i) => (
-                  <span key={i} className="keyword-tag">{kw}</span>
-                ))}
+                <button
+                  className={`submit-btn ${loading ? 'loading' : ''}`}
+                  onClick={handleSubmit}
+                  disabled={loading || !isReady}
+                >
+                  {loading ? (
+                    <>
+                      <span className="submit-spinner" />
+                      분석 중...
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                      </svg>
+                      분류하기
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-            <div className="meta-stat">
-              <span className="stat-value">{(response.processing_time_ms / 1000).toFixed(1)}s</span>
-              <span className="stat-label">처리 시간</span>
+          </section>
+
+          {/* Error */}
+          {error && (
+            <div className="error-msg">{error}</div>
+          )}
+
+          {/* Pipeline indicator */}
+          {loading && (
+            <div className="pipeline-indicator">
+              <div className="pipeline-steps">
+                <div className="pipeline-step active">
+                  <div className="step-dot" />
+                  <span>키워드 추출</span>
+                </div>
+                <div className="pipeline-line" />
+                <div className="pipeline-step">
+                  <div className="step-dot" />
+                  <span>벡터 검색</span>
+                </div>
+                <div className="pipeline-line" />
+                <div className="pipeline-step">
+                  <div className="step-dot" />
+                  <span>리랭킹</span>
+                </div>
+              </div>
+              <p className="pipeline-note">AI가 기술 설명을 분석하고 있습니다...</p>
             </div>
-          </div>
-          <ResultTable results={filteredResults} onCodeClick={(code) => alert(`상세 보기: ${code}`)} />
-        </section>
+          )}
+
+          {/* Results */}
+          {response && filteredResults && (
+            <section className="results-section">
+              <div className="results-meta">
+                <div className="meta-item">
+                  <span className="meta-label">추출 키워드</span>
+                  <div className="keyword-tags">
+                    {response.keywords_extracted.map((kw, i) => (
+                      <span key={i} className="keyword-tag">{kw}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="meta-stat">
+                  <span className="stat-value">{(response.processing_time_ms / 1000).toFixed(1)}s</span>
+                  <span className="stat-label">처리 시간</span>
+                </div>
+              </div>
+              <ResultTable results={filteredResults} onCodeClick={(code) => alert(`상세 보기: ${code}`)} />
+            </section>
+          )}
+        </>
+      ) : (
+        <BatchTab isReady={isReady} />
       )}
     </div>
   );

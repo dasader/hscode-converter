@@ -21,4 +21,4 @@ def test_settings_defaults(monkeypatch):
     assert settings.max_input_length == 2000
     assert settings.max_top_n == 20
     assert settings.vector_search_limit == 50
-    assert settings.similarity_threshold == 0.3
+    assert settings.similarity_threshold == 1.5

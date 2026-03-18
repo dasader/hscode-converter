@@ -32,5 +32,9 @@ Thumbs.db
 # Docker
 dockerbuild.bat
 
+# Test artifacts
+test_batch_*.xlsx
+~$*.xlsx
+
 # Misc
 *.log

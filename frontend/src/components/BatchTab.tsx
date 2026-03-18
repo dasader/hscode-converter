@@ -131,30 +131,41 @@ export default function BatchTab({ isReady }: Props) {
 
   return (
     <div className="batch-tab">
-      <div className="batch-config">
-        <div className="batch-field">
-          <label>필터링 모드</label>
-          <div className="filter-toggle">
-            <button className={filterMode === 'topn' ? 'active' : ''} onClick={() => setFilterMode('topn')}>상위 N개</button>
-            <button className={filterMode === 'confidence' ? 'active' : ''} onClick={() => setFilterMode('confidence')}>신뢰도 기준</button>
+      {/* Config Card */}
+      <div className="batch-config-card">
+        <div className="batch-config-header">
+          <span className="batch-config-label">배치 설정</span>
+        </div>
+        <div className="batch-config-body">
+          <div className="batch-field">
+            <span className="batch-field-label">필터링</span>
+            <div className="filter-toggle">
+              <button className={filterMode === 'topn' ? 'active' : ''} onClick={() => setFilterMode('topn')}>상위 N개</button>
+              <button className={filterMode === 'confidence' ? 'active' : ''} onClick={() => setFilterMode('confidence')}>신뢰도 기준</button>
+            </div>
           </div>
-        </div>
-        <div className="batch-field">
-          <label>{filterMode === 'topn' ? '결과 수' : '최소 신뢰도(%)'}</label>
-          {filterMode === 'topn' ? (
-            <input type="number" className="batch-input" min={1} max={20} value={topN} onChange={(e) => setTopN(Number(e.target.value))} />
-          ) : (
-            <input type="number" className="batch-input" min={0} max={100} step={5} value={confidenceValue} onChange={(e) => setConfidenceValue(Number(e.target.value))} />
-          )}
-        </div>
-        <div className="batch-field">
-          <label>모델</label>
-          <select className="model-selector" value={model} onChange={(e) => setModel(e.target.value)}>
-            {MODEL_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
+          <div className="batch-field">
+            <span className="batch-field-label">{filterMode === 'topn' ? '결과 수' : '최소 신뢰도(%)'}</span>
+            <input
+              type="number"
+              className="batch-input"
+              min={filterMode === 'topn' ? 1 : 0}
+              max={filterMode === 'topn' ? 20 : 100}
+              step={filterMode === 'topn' ? 1 : 5}
+              value={filterMode === 'topn' ? topN : confidenceValue}
+              onChange={(e) => filterMode === 'topn' ? setTopN(Number(e.target.value)) : setConfidenceValue(Number(e.target.value))}
+            />
+          </div>
+          <div className="batch-field">
+            <span className="batch-field-label">모델</span>
+            <select className="model-selector" value={model} onChange={(e) => setModel(e.target.value)}>
+              {MODEL_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
+      {/* Upload */}
       {phase === 'idle' && (
         <>
           {!file ? (
@@ -166,53 +177,112 @@ export default function BatchTab({ isReady }: Props) {
               onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFileSelect(e.dataTransfer.files[0]); }}
             >
               <input ref={fileInputRef} type="file" accept=".xlsx" onChange={(e) => handleFileSelect(e.target.files?.[0] || null)} />
-              <div className="upload-icon">+</div>
+              <div className="upload-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </div>
               <div className="upload-title">엑셀 파일을 드래그하거나 클릭하여 업로드</div>
               <div className="upload-desc">.xlsx 형식, 최대 500건</div>
             </div>
           ) : (
             <div className="file-preview">
               <div className="file-info">
-                <span className="file-name">{file.name}</span>
-                <span className="file-count">{(file.size / 1024).toFixed(1)} KB</span>
+                <div className="file-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+                <div className="file-meta">
+                  <span className="file-name">{file.name}</span>
+                  <span className="file-size">{(file.size / 1024).toFixed(1)} KB</span>
+                </div>
               </div>
-              <button className="remove-file" onClick={() => setFile(null)}>x</button>
+              <button className="remove-file" onClick={() => setFile(null)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
           )}
           <div className="batch-actions">
-            <button className="template-btn" onClick={handleTemplate}>템플릿 다운로드</button>
-            <button className="upload-btn" onClick={handleUpload} disabled={!file || !isReady || phase !== 'idle'}>배치 분류 시작</button>
+            <button className="template-btn" onClick={handleTemplate}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              템플릿 다운로드
+            </button>
+            <button className="upload-btn" onClick={handleUpload} disabled={!file || !isReady}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="13 17 18 12 13 7" /><polyline points="6 17 11 12 6 7" />
+              </svg>
+              배치 분류 시작
+            </button>
           </div>
         </>
       )}
 
+      {/* Progress */}
       {(phase === 'uploading' || phase === 'processing') && (
         <div className="progress-section">
           <div className="progress-header">
-            <span className="progress-title">{phase === 'uploading' ? '업로드 중...' : '처리 중...'}</span>
+            <span className="progress-title">{phase === 'uploading' ? '업로드 중' : '처리 중'}</span>
             <div className="progress-stats">
-              <span className="success">성공 {progress.completed}</span>
-              <span className="fail">실패 {progress.failed}</span>
-              <span>/ 전체 {progress.total}</span>
+              <span className="success">{progress.completed} 성공</span>
+              <span className="fail">{progress.failed} 실패</span>
+              <span>/ {progress.total}</span>
             </div>
           </div>
-          <div className="progress-percent">{progress.percent.toFixed(1)}%</div>
-          <div className="progress-bar-container">
-            <div className="progress-bar-fill" style={{ width: `${progress.percent}%` }} />
+          <div className="progress-body">
+            <div className="progress-percent">
+              {progress.percent.toFixed(1)}<span>%</span>
+            </div>
+            <div className="progress-bar-track">
+              <div className="progress-bar-fill" style={{ width: `${progress.percent}%` }} />
+            </div>
+            <div className="progress-eta">{getETA()}</div>
           </div>
-          <div className="progress-eta">{getETA()}</div>
         </div>
       )}
 
+      {/* Result */}
       {phase === 'complete' && (
         <div className="result-section">
+          <div className="result-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
           <div className="result-summary">
-            처리 완료: <strong>{progress.completed}건</strong> 성공, <strong>{progress.failed}건</strong> 실패
+            배치 분류가 완료되었습니다
+          </div>
+          <div className="result-detail">
+            <span className="result-success">{progress.completed}건 성공</span>
+            {progress.failed > 0 && <> · <span className="result-fail">{progress.failed}건 실패</span></>}
+            {' '}/ 전체 {progress.total}건
           </div>
           <div className="result-actions">
-            <button className="download-btn" onClick={handleDownload}>결과 엑셀 다운로드</button>
+            <button className="download-btn" onClick={handleDownload}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              결과 엑셀 다운로드
+            </button>
             {progress.failed > 0 && (
-              <button className="retry-btn" onClick={handleRetry}>실패 건 재시도 ({progress.failed}건)</button>
+              <button className="retry-btn" onClick={handleRetry}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                실패 건 재시도 ({progress.failed}건)
+              </button>
             )}
           </div>
         </div>

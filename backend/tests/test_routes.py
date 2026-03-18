@@ -29,13 +29,20 @@ async def test_classify_validates_top_n(app):
 
 
 @pytest.mark.asyncio
-async def test_refresh_requires_admin_key(app):
+async def test_refresh_requires_file_and_admin_key(app):
     transport = ASGITransport(app=app)
     with patch.dict("os.environ", ENV_VARS):
         async with AsyncClient(transport=transport, base_url="http://test") as client:
+            # 파일도 헤더도 없으면 422
             resp = await client.post("/api/v1/data/refresh")
             assert resp.status_code == 422
-            resp = await client.post("/api/v1/data/refresh", headers={"X-Admin-Key": "wrong"})
+            # 파일은 있지만 잘못된 키 → 403
+            dummy = b"dummy"
+            resp = await client.post(
+                "/api/v1/data/refresh",
+                files={"file": ("test.xlsx", dummy, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+                headers={"X-Admin-Key": "wrong"},
+            )
             assert resp.status_code == 403
 
 

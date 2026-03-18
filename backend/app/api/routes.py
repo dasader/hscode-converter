@@ -1,7 +1,8 @@
 import os
+import shutil
 import sqlite3
 import logging
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, UploadFile, File
 from app.core.config import Settings
 from app.core.pipeline import ClassificationPipeline
 from app.services.keyword_extractor import KeywordExtractor
@@ -85,14 +86,45 @@ async def get_hsk_code(code: str):
 
 
 @router.post("/data/refresh")
-async def refresh_data(x_admin_key: str = Header(alias="X-Admin-Key")):
+async def refresh_data(
+    file: UploadFile = File(..., description="관세청 HS부호 엑셀 파일 (.xlsx)"),
+    x_admin_key: str = Header(alias="X-Admin-Key"),
+):
+    """관세청 HS부호 엑셀 파일을 업로드하여 데이터를 갱신합니다."""
     settings = get_settings()
     if x_admin_key != settings.admin_api_key:
         raise HTTPException(status_code=403, detail="인증 실패")
+    if not file.filename or not file.filename.endswith(".xlsx"):
+        raise HTTPException(status_code=400, detail=".xlsx 파일만 지원합니다")
+
     ensure_data_dirs(settings)
+
+    # 업로드 파일을 data/ 디렉터리에 저장
+    upload_path = os.path.join(os.path.dirname(settings.sqlite_db_path), file.filename)
+    with open(upload_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
     crawler = HskCrawler()
-    records = await crawler.fetch_all()
-    crawler.save_to_sqlite(records, settings.sqlite_db_path)
+    records = crawler.load_from_excel(upload_path)
+    crawler.save_to_sqlite(records, settings.sqlite_db_path, source_file=upload_path)
+
     embedder = HskEmbedder(settings.openai_api_key, settings.chroma_db_path)
     embedder.embed_from_sqlite(settings.sqlite_db_path)
-    return {"status": "ok", "records_count": len(records)}
+
+    return {"status": "ok", "records_count": len(records), "source_file": file.filename}
+
+
+@router.get("/data/sources")
+async def get_data_sources():
+    """현재 로드된 데이터 소스 이력을 조회합니다."""
+    settings = get_settings()
+    if not os.path.exists(settings.sqlite_db_path):
+        return {"sources": []}
+    conn = sqlite3.connect(settings.sqlite_db_path)
+    cursor = conn.cursor()
+    try:
+        rows = cursor.execute("SELECT file_name, loaded_at, record_count FROM data_sources ORDER BY id DESC").fetchall()
+    except sqlite3.OperationalError:
+        rows = []
+    conn.close()
+    return {"sources": [{"file_name": r[0], "loaded_at": r[1], "record_count": r[2]} for r in rows]}

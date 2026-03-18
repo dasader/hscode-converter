@@ -79,6 +79,34 @@
   padding: 0 32px;
 }
 
+/* Footer */
+.app-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 32px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.footer-brand {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.footer-version {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
 @media (max-width: 768px) {
   .nav-inner,
   .main-content {

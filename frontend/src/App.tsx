@@ -28,6 +28,10 @@ export default function App() {
           <Route path="/browse" element={<BrowsePage />} />
         </Routes>
       </main>
+      <footer className="app-footer">
+        <span className="footer-brand">blinktask.work</span>
+        <span className="footer-version">v1.0.0</span>
+      </footer>
     </BrowserRouter>
   );
 }

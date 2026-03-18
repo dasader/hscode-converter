@@ -21,6 +21,7 @@ export interface ClassifyResponse {
 
 export interface HskCodeDetail {
   code: string;
+  formatted_code: string;
   name_kr: string;
   name_en: string | null;
   level: number;

@@ -12,7 +12,7 @@ export default function HskTree({ node, onSelect }: Props) {
       {node.children?.map((child) => (
         <div key={child.code} className="tree-node" style={{ paddingLeft: `${(child.level - node.level) * 16}px` }}>
           <button className="tree-item" onClick={() => onSelect(child.code)}>
-            <code className="tree-code">{child.code}</code>
+            <code className="tree-code">{child.formatted_code || child.code}</code>
             <span className="tree-name">{child.name_kr}</span>
           </button>
           {child.children && child.children.length > 0 && (

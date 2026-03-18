@@ -64,17 +64,26 @@ async def classify(request: ClassifyRequest):
     return ClassifyResponse(results=classify_results, keywords_extracted=result.keywords, processing_time_ms=result.processing_time_ms)
 
 
+def _make_detail(r) -> HskCodeDetail:
+    return HskCodeDetail(
+        code=r[0], formatted_code=HskCrawler.format_code(r[0]),
+        name_kr=r[1], name_en=r[2], level=r[3], parent_code=r[4], description=r[5],
+    )
+
+
 @router.get("/hsk/search", response_model=HskSearchResult)
 async def search_hsk(q: str, limit: int = 20):
     settings = get_settings()
+    # 포맷된 코드(8507.60-1000)로 검색 시 raw 코드로 변환
+    q_raw = q.replace(".", "").replace("-", "")
     conn = sqlite3.connect(settings.sqlite_db_path)
     cursor = conn.cursor()
     rows = cursor.execute(
-        "SELECT code, name_kr, name_en, level, parent_code, description FROM hsk_codes WHERE name_kr LIKE ? OR name_en LIKE ? OR code LIKE ? LIMIT ?",
-        (f"%{q}%", f"%{q}%", f"%{q}%", limit),
+        "SELECT code, name_kr, name_en, level, parent_code, description FROM hsk_codes WHERE name_kr LIKE ? OR name_en LIKE ? OR code LIKE ? OR code LIKE ? LIMIT ?",
+        (f"%{q}%", f"%{q}%", f"%{q}%", f"%{q_raw}%", limit),
     ).fetchall()
     conn.close()
-    results = [HskCodeDetail(code=r[0], name_kr=r[1], name_en=r[2], level=r[3], parent_code=r[4], description=r[5]) for r in rows]
+    results = [_make_detail(r) for r in rows]
     return HskSearchResult(results=results, total=len(results))
 
 
@@ -89,8 +98,10 @@ async def get_hsk_code(code: str):
         raise HTTPException(status_code=404, detail="HSK 코드를 찾을 수 없습니다")
     children_rows = cursor.execute("SELECT code, name_kr, name_en, level, parent_code, description FROM hsk_codes WHERE parent_code = ?", (code,)).fetchall()
     conn.close()
-    children = [HskCodeDetail(code=c[0], name_kr=c[1], name_en=c[2], level=c[3], parent_code=c[4], description=c[5]) for c in children_rows]
-    return HskCodeDetail(code=row[0], name_kr=row[1], name_en=row[2], level=row[3], parent_code=row[4], description=row[5], children=children)
+    children = [_make_detail(c) for c in children_rows]
+    detail = _make_detail(row)
+    detail.children = children
+    return detail
 
 
 @router.post("/data/refresh")

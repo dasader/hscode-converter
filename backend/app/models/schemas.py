@@ -31,6 +31,7 @@ class ClassifyResponse(BaseModel):
 
 class HskCodeDetail(BaseModel):
     code: str
+    formatted_code: str = ""
     name_kr: str
     name_en: str | None = None
     level: int

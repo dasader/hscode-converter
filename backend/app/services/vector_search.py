@@ -44,6 +44,7 @@ class VectorSearchService:
             results = await asyncio.to_thread(
                 collection.query, query_embeddings=[embedding],
                 n_results=min(limit, 50), include=["documents", "distances", "metadatas"],
+                where={"level": 5},
             )
             if results["ids"] and results["ids"][0]:
                 for code, doc, dist in zip(results["ids"][0], results["documents"][0], results["distances"][0]):

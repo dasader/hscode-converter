@@ -4,6 +4,15 @@ import type { HskCodeDetail } from '../api/types';
 import HskTree from '../components/HskTree';
 import './BrowsePage.css';
 
+function HskCrawler_formatCode(code: string): string {
+  code = code.trim();
+  if (code.length <= 2) return code;
+  if (code.length === 4) return `${code.slice(0, 2)}.${code.slice(2)}`;
+  if (code.length === 6) return `${code.slice(0, 4)}.${code.slice(4)}`;
+  if (code.length >= 8) return `${code.slice(0, 4)}.${code.slice(4, 6)}-${code.slice(6)}`;
+  return code;
+}
+
 export default function BrowsePage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<HskCodeDetail[]>([]);
@@ -56,7 +65,7 @@ export default function BrowsePage() {
               onClick={() => handleSelect(r.code)}
               style={{ animationDelay: `${i * 0.03}s` }}
             >
-              <code className="browse-code">{r.code}</code>
+              <code className="browse-code">{r.formatted_code || r.code}</code>
               <span className="browse-name">{r.name_kr}</span>
               <span className="browse-level">L{r.level}</span>
             </div>
@@ -66,7 +75,7 @@ export default function BrowsePage() {
         {selected && (
           <div className="detail-panel">
             <div className="detail-header">
-              <code className="detail-code">{selected.code}</code>
+              <code className="detail-code">{selected.formatted_code || selected.code}</code>
               <span className="detail-level">Level {selected.level}</span>
             </div>
             <h2 className="detail-name">{selected.name_kr}</h2>
@@ -77,7 +86,7 @@ export default function BrowsePage() {
               <div className="detail-parent">
                 <span className="detail-meta-label">상위 코드</span>
                 <button className="parent-link" onClick={() => handleSelect(selected.parent_code!)}>
-                  {selected.parent_code}
+                  {HskCrawler_formatCode(selected.parent_code!)}
                 </button>
               </div>
             )}

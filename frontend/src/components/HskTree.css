@@ -1,0 +1,42 @@
+.hsk-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tree-node {
+  border-left: 1px solid var(--border);
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.tree-item:hover {
+  background: var(--bg-hover);
+}
+
+.tree-code {
+  font-family: var(--font-mono) !important;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--accent-text);
+  background: none !important;
+  padding: 0 !important;
+  flex-shrink: 0;
+}
+
+.tree-name {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}

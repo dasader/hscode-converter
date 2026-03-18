@@ -1,18 +1,33 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import ClassifyPage from './pages/ClassifyPage';
 import BrowsePage from './pages/BrowsePage';
+import './App.css';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <nav style={{ padding: '8px 24px', borderBottom: '1px solid #eee' }}>
-        <Link to="/" style={{ marginRight: 16 }}>분류</Link>
-        <Link to="/browse">HSK 탐색</Link>
+      <nav className="nav">
+        <div className="nav-inner">
+          <NavLink to="/" className="nav-brand">
+            <span className="nav-brand-icon">HS</span>
+            HSCode Connector
+          </NavLink>
+          <div className="nav-links">
+            <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              기술 분류
+            </NavLink>
+            <NavLink to="/browse" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+              코드 탐색
+            </NavLink>
+          </div>
+        </div>
       </nav>
-      <Routes>
-        <Route path="/" element={<ClassifyPage />} />
-        <Route path="/browse" element={<BrowsePage />} />
-      </Routes>
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<ClassifyPage />} />
+          <Route path="/browse" element={<BrowsePage />} />
+        </Routes>
+      </main>
     </BrowserRouter>
   );
 }

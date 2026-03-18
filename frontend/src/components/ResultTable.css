@@ -1,0 +1,134 @@
+.result-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-card {
+  display: flex;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  animation: slideUp 0.4s ease-out both;
+}
+
+.result-card:hover {
+  border-color: rgba(45, 212, 191, 0.25);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  transform: translateX(4px);
+}
+
+.result-rank {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+.rank-num {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--accent-dim);
+  color: var(--accent-text);
+}
+
+.result-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.result-code {
+  font-family: var(--font-mono) !important;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: none !important;
+  padding: 0 !important;
+  letter-spacing: 0.04em;
+}
+
+.confidence-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.confidence-bar {
+  width: 80px;
+  height: 4px;
+  background: var(--bg-deep);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confidence-value {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 32px;
+  text-align: right;
+}
+
+.result-names {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.name-kr {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.name-en {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.result-reason {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+@media (max-width: 768px) {
+  .result-card {
+    padding: 14px 16px;
+  }
+  .confidence-bar {
+    width: 50px;
+  }
+}

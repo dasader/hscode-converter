@@ -1,4 +1,5 @@
 import type { HskCodeDetail } from '../api/types';
+import './HskTree.css';
 
 interface Props {
   node: HskCodeDetail;
@@ -7,13 +8,17 @@ interface Props {
 
 export default function HskTree({ node, onSelect }: Props) {
   return (
-    <div style={{ marginLeft: (node.level - 1) * 20, padding: '4px 0' }}>
-      <span onClick={() => onSelect(node.code)} style={{ cursor: 'pointer', fontFamily: 'monospace' }}>
-        {node.code}
-      </span>
-      {' '}{node.name_kr}
+    <div className="hsk-tree">
       {node.children?.map((child) => (
-        <HskTree key={child.code} node={child} onSelect={onSelect} />
+        <div key={child.code} className="tree-node" style={{ paddingLeft: `${(child.level - node.level) * 16}px` }}>
+          <button className="tree-item" onClick={() => onSelect(child.code)}>
+            <code className="tree-code">{child.code}</code>
+            <span className="tree-name">{child.name_kr}</span>
+          </button>
+          {child.children && child.children.length > 0 && (
+            <HskTree node={child} onSelect={onSelect} />
+          )}
+        </div>
       ))}
     </div>
   );

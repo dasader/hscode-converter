@@ -1,8 +1,36 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Environment
 .env
+.venv/
+venv/
+
+# Data (DB, embeddings, Excel)
 /data/
-*.db
+backend/data/
+
+# Node
 node_modules/
 dist/
 .vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+dockerbuild.bat
+
+# Misc
+*.log

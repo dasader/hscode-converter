@@ -15,7 +15,7 @@ async def test_pipeline_runs_all_steps():
     mock_extractor.extract.return_value = ["양극재", "cathode material"]
     mock_search = MagicMock()
     from app.services.vector_search import SearchCandidate
-    mock_search.search.return_value = [SearchCandidate(code="8507601000", name="리튬이온 축전지", distance=0.1)]
+    mock_search.search = AsyncMock(return_value=[SearchCandidate(code="8507601000", name="리튬이온 축전지", distance=0.1)])
     mock_reranker = AsyncMock()
     mock_reranker.rerank.return_value = [{"code": "8507601000", "confidence": 0.92, "reason": "관련"}]
     pipeline = ClassificationPipeline(keyword_extractor=mock_extractor, vector_search=mock_search, reranker=mock_reranker)

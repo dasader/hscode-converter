@@ -11,5 +11,6 @@ class Settings(BaseSettings):
     vector_search_limit: int = 50
     similarity_threshold: float = 0.3
     pipeline_timeout: int = 30
+    excel_dir: str = "./data"
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": ".env", "extra": "ignore"}

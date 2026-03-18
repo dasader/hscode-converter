@@ -16,9 +16,9 @@ SYSTEM_PROMPT = """당신은 HS 코드 분류 전문가입니다.
 [{"code": "코드", "confidence": 0.0~1.0, "reason": "선정 사유"}, ...]"""
 
 MODEL_MAP = {
-    "chatgpt-5.4-nano": "gpt-4o-mini",
-    "chatgpt-5.4-mini": "gpt-4o-mini",
-    "chatgpt-5.4": "gpt-4o",
+    "chatgpt-5.4-nano": "gpt-5.4-nano",
+    "chatgpt-5.4-mini": "gpt-5.4-mini",
+    "chatgpt-5.4": "gpt-5.4",
 }
 
 
@@ -46,7 +46,7 @@ class Reranker:
         return []
 
     async def rerank(self, description: str, candidates: list[SearchCandidate], top_n: int, model: str = "chatgpt-5.4-mini", max_retries: int = 2) -> list[dict]:
-        openai_model = MODEL_MAP.get(model, "gpt-4o-mini")
+        openai_model = MODEL_MAP.get(model, "gpt-5.4-mini")
         candidates_text = self.build_candidates_text(candidates)
         user_prompt = f"## R&D 기술 설명\n{description}\n\n## 후보 HSK 코드 목록\n{candidates_text}\n\n위 기술 설명과 가장 관련 있는 HSK 코드를 최대 {top_n}개 선정하세요."
         last_error = None

@@ -10,9 +10,9 @@ SYSTEM_PROMPT = """당신은 R&D 기술 설명에서 관련 무역 상품을 추
 결과는 JSON 배열 형식으로만 반환하세요. 예: ["양극재", "cathode material", "리튬이온 배터리"]"""
 
 MODEL_MAP = {
-    "chatgpt-5.4-nano": "gpt-4o-mini",
-    "chatgpt-5.4-mini": "gpt-4o-mini",
-    "chatgpt-5.4": "gpt-4o",
+    "chatgpt-5.4-nano": "gpt-5.4-nano",
+    "chatgpt-5.4-mini": "gpt-5.4-mini",
+    "chatgpt-5.4": "gpt-5.4",
 }
 
 
@@ -37,7 +37,7 @@ class KeywordExtractor:
         return [k for k in keywords if k]
 
     async def extract(self, description: str, model: str = "chatgpt-5.4-mini", max_retries: int = 2) -> list[str]:
-        openai_model = MODEL_MAP.get(model, "gpt-4o-mini")
+        openai_model = MODEL_MAP.get(model, "gpt-5.4-mini")
         last_error = None
         for attempt in range(max_retries + 1):
             try:

@@ -1,12 +1,16 @@
+/* Accent stripe */
+.accent-stripe {
+  height: 3px;
+  background: var(--color-accent);
+}
+
 /* Navigation */
 .nav {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .nav-inner {
@@ -16,7 +20,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
+  height: 52px;
 }
 
 .nav-brand {
@@ -24,24 +28,25 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
-  color: var(--text-primary);
-  font-weight: 600;
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 1rem;
   letter-spacing: -0.02em;
 }
 
 .nav-brand-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent), #0f766e);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-surface);
+  background: var(--color-accent);
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-inverse);
-  font-family: var(--font-mono);
+  letter-spacing: 0;
 }
 
 .nav-links {
@@ -51,23 +56,21 @@
 
 .nav-link {
   text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.88rem;
-  font-weight: 400;
-  padding: 6px 16px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition);
-  letter-spacing: 0.01em;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  transition: color var(--transition);
 }
 
 .nav-link:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
+  color: var(--color-ink);
 }
 
 .nav-link.active {
-  color: var(--accent-text);
-  background: var(--accent-dim);
+  color: var(--color-ink);
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-ink);
 }
 
 /* Main content */
@@ -82,34 +85,35 @@
 /* Footer */
 .app-footer {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 24px 32px;
+  max-width: 1120px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 20px 32px;
   margin-top: auto;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid var(--color-border);
 }
 
 .footer-brand {
-  font-size: 0.78rem;
-  font-weight: 400;
-  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-faint);
   letter-spacing: 0.02em;
 }
 
 .footer-version {
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  color: var(--text-muted);
-  background: var(--bg-deep);
-  border: 1px solid var(--border);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  color: var(--color-faint);
 }
 
 @media (max-width: 768px) {
   .nav-inner,
   .main-content {
     padding: 0 16px;
+  }
+  .app-footer {
+    padding: 20px 16px;
   }
 }

@@ -6,6 +6,7 @@ import './App.css';
 export default function App() {
   return (
     <BrowserRouter>
+      <div className="accent-stripe" />
       <nav className="nav">
         <div className="nav-inner">
           <NavLink to="/" className="nav-brand">

@@ -64,6 +64,15 @@ export default function ClassifyPage() {
     : null;
 
   const sliderPct = confidenceThreshold;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyAllCodes = async () => {
+    if (!filteredResults || filteredResults.length === 0) return;
+    const codes = filteredResults.map(r => r.hsk_code.replace(/[.\-\s]/g, '')).join(', ');
+    await navigator.clipboard.writeText(codes);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className="classify-page">
@@ -226,9 +235,24 @@ export default function ClassifyPage() {
                     ))}
                   </div>
                 </div>
-                <div className="meta-stat">
-                  <span className="stat-value">{(response.processing_time_ms / 1000).toFixed(1)}s</span>
-                  <span className="stat-label">처리 시간</span>
+                <div className="meta-actions">
+                  <div className="meta-stat">
+                    <span className="stat-value">{(response.processing_time_ms / 1000).toFixed(1)}s</span>
+                    <span className="stat-label">처리 시간</span>
+                  </div>
+                  <button className="copy-codes-btn" onClick={handleCopyAllCodes}>
+                    {copied ? (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        복사됨
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="0"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        HS코드 복사
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
               <ResultTable results={filteredResults} onCodeClick={(code) => alert(`상세 보기: ${code}`)} />

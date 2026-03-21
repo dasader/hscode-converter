@@ -1,7 +1,8 @@
 import asyncio
 from dataclasses import dataclass
 import logging
-from openai import AsyncOpenAI
+from google import genai
+from google.genai import types
 import chromadb
 
 logger = logging.getLogger(__name__)
@@ -15,10 +16,11 @@ class SearchCandidate:
 
 
 class VectorSearchService:
-    EMBEDDING_MODEL = "text-embedding-3-small"
+    EMBEDDING_DIMENSIONALITY = 1536
 
-    def __init__(self, openai_api_key: str, chroma_db_path: str):
-        self.openai_client = AsyncOpenAI(api_key=openai_api_key)
+    def __init__(self, api_key: str, chroma_db_path: str, embedding_model: str):
+        self.client = genai.Client(api_key=api_key)
+        self.embedding_model = embedding_model
         self.chroma_client = chromadb.PersistentClient(path=chroma_db_path)
 
     @staticmethod
@@ -56,5 +58,9 @@ class VectorSearchService:
         return result
 
     async def _get_embedding(self, text: str) -> list[float]:
-        response = await self.openai_client.embeddings.create(model=self.EMBEDDING_MODEL, input=[text])
-        return response.data[0].embedding
+        response = await self.client.aio.models.embed_content(
+            model=self.embedding_model,
+            contents=text,
+            config=types.EmbedContentConfig(output_dimensionality=self.EMBEDDING_DIMENSIONALITY),
+        )
+        return list(response.embeddings[0].values)

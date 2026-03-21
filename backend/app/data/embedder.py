@@ -1,7 +1,8 @@
 import sqlite3
 import logging
 from typing import Iterator
-from openai import OpenAI
+from google import genai
+from google.genai import types
 import chromadb
 
 logger = logging.getLogger(__name__)
@@ -14,11 +15,12 @@ class HskEmbedder:
     예: "제85류 전기기기 > 축전지 > 리튬이온 축전지 > 반도체 제조용 [자본재 > 전기·전자기기 > 반도체]"
     """
 
-    EMBEDDING_MODEL = "text-embedding-3-small"
+    EMBEDDING_DIMENSIONALITY = 1536
     BATCH_SIZE = 100
 
-    def __init__(self, openai_api_key: str, chroma_db_path: str):
-        self.openai_client = OpenAI(api_key=openai_api_key)
+    def __init__(self, api_key: str, chroma_db_path: str, embedding_model: str):
+        self.client = genai.Client(api_key=api_key)
+        self.embedding_model = embedding_model
         self.chroma_client = chromadb.PersistentClient(path=chroma_db_path)
 
     @staticmethod
@@ -84,5 +86,9 @@ class HskEmbedder:
         logger.info(f"ChromaDB 임베딩 완료: 총 {len(rows)}건")
 
     def _get_embeddings(self, texts: list[str]) -> list[list[float]]:
-        response = self.openai_client.embeddings.create(model=self.EMBEDDING_MODEL, input=texts)
-        return [item.embedding for item in response.data]
+        response = self.client.models.embed_content(
+            model=self.embedding_model,
+            contents=texts,
+            config=types.EmbedContentConfig(output_dimensionality=self.EMBEDDING_DIMENSIONALITY),
+        )
+        return [list(e.values) for e in response.embeddings]

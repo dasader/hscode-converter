@@ -3,16 +3,16 @@ import pytest
 
 
 def test_settings_loads_from_env(monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
     monkeypatch.setenv("ADMIN_API_KEY", "admin-test")
     from app.core.config import Settings
     settings = Settings()
-    assert settings.openai_api_key == "test-key"
+    assert settings.google_api_key == "test-key"
     assert settings.admin_api_key == "admin-test"
 
 
 def test_settings_defaults(monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
     monkeypatch.setenv("ADMIN_API_KEY", "admin-test")
     from app.core.config import Settings
     settings = Settings()
@@ -22,3 +22,5 @@ def test_settings_defaults(monkeypatch):
     assert settings.max_top_n == 20
     assert settings.vector_search_limit == 50
     assert settings.similarity_threshold == 1.5
+    assert settings.gemini_model == "gemini-3-flash-preview"
+    assert settings.gemini_embedding_model == "gemini-embedding-001"

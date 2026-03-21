@@ -2,8 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    openai_api_key: str
+    google_api_key: str
     admin_api_key: str
+    gemini_model: str = "gemini-3-flash-preview"
+    gemini_embedding_model: str = "gemini-embedding-001"
     chroma_db_path: str = "./data/chromadb"
     sqlite_db_path: str = "./data/hsk.db"
     max_input_length: int = 2000

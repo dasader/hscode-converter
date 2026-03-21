@@ -12,7 +12,7 @@ def db(tmp_path):
 def test_create_job(db):
     job_id = db.create_job(
         file_name="test.xlsx", total_items=10,
-        top_n=5, confidence_threshold=None, model="chatgpt-5.4-mini"
+        top_n=5, confidence_threshold=None
     )
     job = db.get_job(job_id)
     assert job["status"] == "pending"
@@ -21,7 +21,7 @@ def test_create_job(db):
 
 
 def test_create_items(db):
-    job_id = db.create_job("test.xlsx", 2, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 2, 5, None)
     items = [
         {"row_index": 1, "task_name": "과제A", "description": "기술 설명 1"},
         {"row_index": 2, "task_name": None, "description": "기술 설명 2"},
@@ -33,7 +33,7 @@ def test_create_items(db):
 
 
 def test_update_item_completed(db):
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 1, "task_name": None, "description": "desc"}])
     items = db.get_items(job_id)
     item_id = items[0]["item_id"]
@@ -44,7 +44,7 @@ def test_update_item_completed(db):
 
 
 def test_update_item_failed(db):
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 1, "task_name": None, "description": "desc"}])
     items = db.get_items(job_id)
     item_id = items[0]["item_id"]
@@ -55,7 +55,7 @@ def test_update_item_failed(db):
 
 
 def test_update_job_progress(db):
-    job_id = db.create_job("test.xlsx", 2, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 2, 5, None)
     db.create_items(job_id, [
         {"row_index": 1, "task_name": None, "description": "desc1"},
         {"row_index": 2, "task_name": None, "description": "desc2"},
@@ -71,7 +71,7 @@ def test_update_job_progress(db):
 
 
 def test_get_pending_items(db):
-    job_id = db.create_job("test.xlsx", 2, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 2, 5, None)
     db.create_items(job_id, [
         {"row_index": 1, "task_name": None, "description": "desc1"},
         {"row_index": 2, "task_name": None, "description": "desc2"},
@@ -84,7 +84,7 @@ def test_get_pending_items(db):
 
 
 def test_reset_failed_items(db):
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 1, "task_name": None, "description": "desc"}])
     items = db.get_items(job_id)
     db.update_item_status(items[0]["item_id"], "failed", error_message="err")
@@ -95,7 +95,7 @@ def test_reset_failed_items(db):
 
 
 def test_recover_processing_items(db):
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 1, "task_name": None, "description": "desc"}])
     items = db.get_items(job_id)
     db._execute("UPDATE batch_items SET status='processing' WHERE item_id=?", (items[0]["item_id"],))
@@ -105,7 +105,7 @@ def test_recover_processing_items(db):
 
 
 def test_list_jobs(db):
-    db.create_job("a.xlsx", 1, 5, None, "chatgpt-5.4-mini")
-    db.create_job("b.xlsx", 2, 10, 0.7, "chatgpt-5.4")
+    db.create_job("a.xlsx", 1, 5, None)
+    db.create_job("b.xlsx", 2, 10, 0.7)
     jobs = db.list_jobs()
     assert len(jobs) == 2

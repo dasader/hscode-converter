@@ -34,15 +34,15 @@ class ClassificationPipeline:
         self.similarity_threshold = similarity_threshold
         self.pipeline_timeout = pipeline_timeout
 
-    async def classify(self, description: str, top_n: int = 5, model: str = "chatgpt-5.4-mini",
+    async def classify(self, description: str, top_n: int = 5,
                        on_step: Callable[[PipelineStep], None] | None = None,
                        rate_limiter=None) -> PipelineResult:
         return await asyncio.wait_for(
-            self._classify_impl(description, top_n, model, on_step, rate_limiter),
+            self._classify_impl(description, top_n, on_step, rate_limiter),
             timeout=self.pipeline_timeout,
         )
 
-    async def _classify_impl(self, description: str, top_n: int = 5, model: str = "chatgpt-5.4-mini",
+    async def _classify_impl(self, description: str, top_n: int = 5,
                               on_step: Callable[[PipelineStep], None] | None = None,
                               rate_limiter=None) -> PipelineResult:
         start = time.time()
@@ -50,7 +50,7 @@ class ClassificationPipeline:
             on_step(PipelineStep.KEYWORD_EXTRACTION)
         if rate_limiter:
             await rate_limiter.acquire(rpm=1, tpm=470)
-        keywords = await self.keyword_extractor.extract(description, model=model)
+        keywords = await self.keyword_extractor.extract(description)
 
         if on_step:
             on_step(PipelineStep.VECTOR_SEARCH)
@@ -63,7 +63,7 @@ class ClassificationPipeline:
             on_step(PipelineStep.RERANKING)
         if rate_limiter:
             await rate_limiter.acquire(rpm=1, tpm=950)
-        results = await self.reranker.rerank(description, candidates, top_n, model=model)
+        results = await self.reranker.rerank(description, candidates, top_n)
 
         elapsed_ms = int((time.time() - start) * 1000)
         logger.info(f"파이프라인 완료: {elapsed_ms}ms")

@@ -2,14 +2,14 @@ import asyncio
 import json
 import logging
 import sqlite3
-from openai import RateLimitError, InternalServerError, APIConnectionError
+from google.genai.errors import ClientError, ServerError
 from app.data.batch_db import BatchDB
 from app.data.crawler import HskCrawler
 
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
-RETRYABLE_ERRORS = (RateLimitError, InternalServerError, APIConnectionError, asyncio.TimeoutError)
+RETRYABLE_ERRORS = (ClientError, ServerError, asyncio.TimeoutError)
 
 
 class BatchWorker:
@@ -77,7 +77,6 @@ class BatchWorker:
             self.db._execute("UPDATE batch_jobs SET status='processing' WHERE job_id=? AND status='pending'", (job_id,))
 
         top_n = job["top_n"]
-        model = job["model"]
         confidence_threshold = job.get("confidence_threshold")
         effective_top_n = 20 if confidence_threshold is not None else top_n
 
@@ -87,7 +86,7 @@ class BatchWorker:
         for attempt in range(MAX_RETRIES):
             try:
                 pipeline_result = await self.pipeline.classify(
-                    description, top_n=effective_top_n, model=model,
+                    description, top_n=effective_top_n,
                     rate_limiter=self.rate_limiter,
                 )
                 break

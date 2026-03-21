@@ -40,11 +40,11 @@ class BatchService:
         wb.save(output_path)
 
     def create_job(self, file_path: str, file_name: str, top_n: int,
-                   confidence_threshold: float | None, model: str) -> str:
+                   confidence_threshold: float | None) -> str:
         items = self.parse_excel(file_path)
         if not items:
             raise ValueError("유효한 기술 설명이 없습니다.")
-        job_id = self.db.create_job(file_name, len(items), top_n, confidence_threshold, model)
+        job_id = self.db.create_job(file_name, len(items), top_n, confidence_threshold)
         self.db.create_items(job_id, items)
         return job_id
 

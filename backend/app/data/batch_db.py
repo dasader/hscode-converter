@@ -60,14 +60,14 @@ class BatchDB:
         """)
         conn.close()
 
-    def create_job(self, file_name, total_items, top_n, confidence_threshold, model):
+    def create_job(self, file_name, total_items, top_n, confidence_threshold):
         job_id = str(uuid.uuid4())
         now = datetime.now(timezone.utc).isoformat()
         with self._write_lock:
             conn = self._connect()
             conn.execute(
-                "INSERT INTO batch_jobs (job_id, file_name, total_items, top_n, confidence_threshold, model, created_at) VALUES (?,?,?,?,?,?,?)",
-                (job_id, file_name, total_items, top_n, confidence_threshold, model, now),
+                "INSERT INTO batch_jobs (job_id, file_name, total_items, top_n, confidence_threshold, created_at) VALUES (?,?,?,?,?,?)",
+                (job_id, file_name, total_items, top_n, confidence_threshold, now),
             )
             conn.commit()
             conn.close()

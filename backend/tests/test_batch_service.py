@@ -60,7 +60,7 @@ def test_create_job_from_excel(tmp_path, db, service):
     path = _make_excel(tmp_path, [
         ["과제A", "리튬이온 배터리 양극재 제조 기술에 대한 설명입니다"],
     ])
-    job_id = service.create_job(path, "test.xlsx", top_n=5, confidence_threshold=None, model="chatgpt-5.4-mini")
+    job_id = service.create_job(path, "test.xlsx", top_n=5, confidence_threshold=None)
     job = db.get_job(job_id)
     assert job["total_items"] == 1
     items = db.get_items(job_id)
@@ -68,7 +68,7 @@ def test_create_job_from_excel(tmp_path, db, service):
 
 
 def test_generate_result_excel_topn_mode(tmp_path, db, service):
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 2, "task_name": "과제A", "description": "기술 설명"}])
     items = db.get_items(job_id)
     result = {

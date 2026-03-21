@@ -32,7 +32,7 @@ def mock_settings():
 
 @pytest.mark.asyncio
 async def test_worker_processes_item(db, mock_pipeline, mock_settings):
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 1, "task_name": None, "description": "테스트 기술 설명입니다 충분히 긴 텍스트"}])
     items = db.get_items(job_id)
 
@@ -53,7 +53,7 @@ async def test_worker_handles_failure(db, mock_settings):
     pipeline = MagicMock()
     pipeline.classify = AsyncMock(side_effect=Exception("API Error"))
 
-    job_id = db.create_job("test.xlsx", 1, 5, None, "chatgpt-5.4-mini")
+    job_id = db.create_job("test.xlsx", 1, 5, None)
     db.create_items(job_id, [{"row_index": 1, "task_name": None, "description": "테스트 기술 설명입니다 충분히 긴 텍스트"}])
     items = db.get_items(job_id)
 

@@ -18,7 +18,7 @@ class HskEmbedder:
     """
 
     EMBEDDING_DIMENSIONALITY = 1536
-    BATCH_SIZE = 500
+    BATCH_SIZE = 100
     MAX_RETRIES = 5
 
     def __init__(self, api_key: str, chroma_db_path: str, embedding_model: str):

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import ClassifyPage from './pages/ClassifyPage';
 import BrowsePage from './pages/BrowsePage';
+import { version } from '../package.json';
 import './App.css';
 
 export default function App() {
@@ -31,7 +32,7 @@ export default function App() {
       </main>
       <footer className="app-footer">
         <span className="footer-brand">blinktask.work</span>
-        <span className="footer-version">v1.0.0</span>
+        <span className="footer-version">v{version}</span>
       </footer>
     </BrowserRouter>
   );

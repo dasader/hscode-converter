@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { classify } from '../api/client';
+import * as XLSX from 'xlsx';
+import { classifyStream } from '../api/client';
 import type { ClassifyResponse } from '../api/types';
 import ResultTable from '../components/ResultTable';
 import BatchTab from '../components/BatchTab';
@@ -14,6 +15,7 @@ export default function ClassifyPage() {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ClassifyResponse | null>(null);
   const [error, setError] = useState('');
+  const [pipelineStep, setPipelineStep] = useState<string | null>(null);
   const [dataStatus, setDataStatus] = useState<{ state: string; message: string } | null>(null);
 
   useEffect(() => {
@@ -42,13 +44,18 @@ export default function ClassifyPage() {
     setLoading(true);
     setError('');
     setResponse(null);
+    setPipelineStep(null);
     try {
-      const result = await classify({ description, top_n: topN });
+      const result = await classifyStream(
+        { description, top_n: topN },
+        (step) => setPipelineStep(step),
+      );
       setResponse(result);
     } catch (e: any) {
-      setError(e.response?.data?.detail || '분류 중 오류가 발생했습니다');
+      setError(e.message || '분류 중 오류가 발생했습니다');
     } finally {
       setLoading(false);
+      setPipelineStep(null);
     }
   };
 
@@ -65,6 +72,41 @@ export default function ClassifyPage() {
     await navigator.clipboard.writeText(codes);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExcelDownload = () => {
+    if (!response || !filteredResults || filteredResults.length === 0) return;
+    const wb = XLSX.utils.book_new();
+
+    // 분석 결과 시트
+    const resultRows = filteredResults.map(r => ({
+      '순위': r.rank,
+      'HS코드': r.hsk_code,
+      '품목명(한글)': r.name_kr,
+      '품목명(영문)': r.name_en || '',
+      '신뢰도(%)': Math.round(r.confidence * 100),
+      '판단 근거': r.reason,
+    }));
+    const wsResult = XLSX.utils.json_to_sheet(resultRows);
+    // 컬럼 너비 설정
+    wsResult['!cols'] = [
+      { wch: 6 }, { wch: 16 }, { wch: 30 }, { wch: 30 }, { wch: 10 }, { wch: 50 },
+    ];
+    XLSX.utils.book_append_sheet(wb, wsResult, '분류 결과');
+
+    // 분석 요약 시트
+    const summaryRows = [
+      { '항목': '기술 설명', '내용': description },
+      { '항목': '추출 키워드', '내용': response.keywords_extracted.join(', ') },
+      { '항목': '처리 시간', '내용': `${(response.processing_time_ms / 1000).toFixed(1)}초` },
+      { '항목': '결과 수', '내용': `${filteredResults.length}건` },
+      { '항목': '최소 신뢰도 필터', '내용': `${confidenceThreshold}%` },
+    ];
+    const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
+    wsSummary['!cols'] = [{ wch: 18 }, { wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, '분석 요약');
+
+    XLSX.writeFile(wb, `HS코드_분류결과_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (
@@ -181,27 +223,27 @@ export default function ClassifyPage() {
           )}
 
           {/* Pipeline indicator */}
-          {loading && (
-            <div className="pipeline-indicator">
-              <div className="pipeline-steps">
-                <div className="pipeline-step active">
-                  <div className="step-dot" />
-                  <span>키워드 추출</span>
+          {loading && (() => {
+            const steps = ['keyword_extraction', 'vector_search', 'reranking'] as const;
+            const labels = { keyword_extraction: '키워드 추출', vector_search: '벡터 검색', reranking: '리랭킹' };
+            const currentIdx = pipelineStep ? steps.indexOf(pipelineStep as typeof steps[number]) : -1;
+            return (
+              <div className="pipeline-indicator">
+                <div className="pipeline-steps">
+                  {steps.map((step, i) => (
+                    <div key={step}>
+                      {i > 0 && <div className={`pipeline-line${i <= currentIdx ? ' done' : ''}`} />}
+                      <div className={`pipeline-step${i === currentIdx ? ' active' : ''}${i < currentIdx ? ' done' : ''}`}>
+                        <div className="step-dot" />
+                        <span>{labels[step]}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="pipeline-line" />
-                <div className="pipeline-step">
-                  <div className="step-dot" />
-                  <span>벡터 검색</span>
-                </div>
-                <div className="pipeline-line" />
-                <div className="pipeline-step">
-                  <div className="step-dot" />
-                  <span>리랭킹</span>
-                </div>
+                <p className="pipeline-note">AI가 기술 설명을 분석하고 있습니다...</p>
               </div>
-              <p className="pipeline-note">AI가 기술 설명을 분석하고 있습니다...</p>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Results */}
           {response && filteredResults && (
@@ -232,6 +274,14 @@ export default function ClassifyPage() {
                         HS코드 복사
                       </>
                     )}
+                  </button>
+                  <button className="export-excel-btn" onClick={handleExcelDownload}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    엑셀 다운로드
                   </button>
                 </div>
               </div>

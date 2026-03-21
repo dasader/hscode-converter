@@ -1,10 +1,13 @@
+import asyncio
+import json
 import os
 import shutil
 import sqlite3
 import logging
 from fastapi import APIRouter, HTTPException, Header, UploadFile, File
+from fastapi.responses import StreamingResponse
 from app.core.config import Settings
-from app.core.pipeline import ClassificationPipeline
+from app.core.pipeline import ClassificationPipeline, PipelineStep
 from app.services.keyword_extractor import KeywordExtractor
 from app.services.vector_search import VectorSearchService
 from app.services.reranker import Reranker
@@ -44,11 +47,7 @@ def ensure_data_dirs(settings: Settings) -> None:
     os.makedirs(settings.chroma_db_path, exist_ok=True)
 
 
-@router.post("/classify", response_model=ClassifyResponse)
-async def classify(request: ClassifyRequest):
-    settings = get_settings()
-    pipeline = get_pipeline(settings)
-    result = await pipeline.classify(request.description, request.top_n)
+def _build_classify_results(result, settings) -> ClassifyResponse:
     conn = sqlite3.connect(settings.sqlite_db_path)
     cursor = conn.cursor()
     classify_results = []
@@ -62,6 +61,52 @@ async def classify(request: ClassifyRequest):
         ))
     conn.close()
     return ClassifyResponse(results=classify_results, keywords_extracted=result.keywords, processing_time_ms=result.processing_time_ms)
+
+
+@router.post("/classify", response_model=ClassifyResponse)
+async def classify(request: ClassifyRequest):
+    settings = get_settings()
+    pipeline = get_pipeline(settings)
+    result = await pipeline.classify(request.description, request.top_n)
+    return _build_classify_results(result, settings)
+
+
+STEP_MAP = {
+    PipelineStep.KEYWORD_EXTRACTION: "keyword_extraction",
+    PipelineStep.VECTOR_SEARCH: "vector_search",
+    PipelineStep.RERANKING: "reranking",
+}
+
+
+@router.post("/classify/stream")
+async def classify_stream(request: ClassifyRequest):
+    settings = get_settings()
+    pipeline = get_pipeline(settings)
+    step_queue: asyncio.Queue = asyncio.Queue()
+
+    def on_step(step: PipelineStep):
+        step_queue.put_nowait(step)
+
+    async def event_stream():
+        task = asyncio.create_task(
+            pipeline.classify(request.description, request.top_n, on_step=on_step)
+        )
+        while not task.done():
+            try:
+                step = await asyncio.wait_for(step_queue.get(), timeout=0.5)
+                yield f"data: {json.dumps({'type': 'step', 'step': STEP_MAP[step]})}\n\n"
+            except asyncio.TimeoutError:
+                continue
+        # drain remaining steps
+        while not step_queue.empty():
+            step = step_queue.get_nowait()
+            yield f"data: {json.dumps({'type': 'step', 'step': STEP_MAP[step]})}\n\n"
+        result = await task
+        response = _build_classify_results(result, settings)
+        yield f"data: {json.dumps({'type': 'result', 'data': response.model_dump()})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 def _make_detail(r) -> HskCodeDetail:

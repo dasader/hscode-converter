@@ -422,12 +422,27 @@
   background: var(--color-accent);
 }
 
+.pipeline-step.done span {
+  color: var(--color-accent);
+  opacity: 0.6;
+}
+
+.pipeline-step.done .step-dot {
+  background: var(--color-accent);
+  opacity: 0.6;
+}
+
 .pipeline-line {
   width: 60px;
   height: 1px;
   background: var(--color-border);
   margin: 0 12px;
   margin-bottom: 24px;
+}
+
+.pipeline-line.done {
+  background: var(--color-accent);
+  opacity: 0.6;
 }
 
 .pipeline-note {
@@ -515,6 +530,28 @@
 .copy-codes-btn:hover {
   background: rgba(17, 94, 89, 0.12);
   border-color: var(--color-accent);
+}
+
+.export-excel-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.export-excel-btn:hover {
+  background: var(--color-hover);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .stat-value {

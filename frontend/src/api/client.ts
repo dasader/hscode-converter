@@ -8,6 +8,43 @@ export async function classify(request: ClassifyRequest): Promise<ClassifyRespon
   return data;
 }
 
+export function classifyStream(
+  request: ClassifyRequest,
+  onStep: (step: string) => void,
+): Promise<ClassifyResponse> {
+  return new Promise((resolve, reject) => {
+    fetch('/api/v1/classify/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    }).then(res => {
+      if (!res.ok) {
+        res.json().then(err => reject(new Error(err.detail || '분류 중 오류가 발생했습니다'))).catch(() => reject(new Error('분류 중 오류가 발생했습니다')));
+        return;
+      }
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      const read = (): void => {
+        reader.read().then(({ done, value }) => {
+          if (done) return;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop()!;
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const parsed = JSON.parse(line.slice(6));
+            if (parsed.type === 'step') onStep(parsed.step);
+            else if (parsed.type === 'result') resolve(parsed.data);
+          }
+          read();
+        }).catch(reject);
+      };
+      read();
+    }).catch(reject);
+  });
+}
+
 export async function getHskCode(code: string): Promise<HskCodeDetail> {
   const { data } = await api.get<HskCodeDetail>(`/hsk/${code}`);
   return data;

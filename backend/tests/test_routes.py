@@ -3,7 +3,7 @@ from unittest.mock import patch
 from httpx import AsyncClient, ASGITransport
 from app.main import create_app
 
-ENV_VARS = {"OPENAI_API_KEY": "test-key", "ADMIN_API_KEY": "test-admin"}
+ENV_VARS = {"GOOGLE_API_KEY": "test-key", "ADMIN_API_KEY": "test-admin"}
 
 
 @pytest.fixture

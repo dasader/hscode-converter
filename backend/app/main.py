@@ -78,7 +78,7 @@ def _auto_load_sync(settings: Settings) -> None:
             _loading_status = {"state": "embedding", "message": "임베딩 생성 중 (수 분 소요)..."}
             logger.info("임베딩 생성 시작...")
             from app.data.embedder import HskEmbedder
-            embedder = HskEmbedder(settings.openai_api_key, settings.chroma_db_path)
+            embedder = HskEmbedder(settings.google_api_key, settings.chroma_db_path, settings.gemini_embedding_model)
             embedder.embed_from_sqlite(settings.sqlite_db_path)
             logger.info("임베딩 생성 완료.")
 

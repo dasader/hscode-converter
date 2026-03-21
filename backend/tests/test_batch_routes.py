@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 from openpyxl import Workbook
 
-os.environ.setdefault("OPENAI_API_KEY", "sk-test-dummy-key")
+os.environ.setdefault("GOOGLE_API_KEY", "test-dummy-key")
 os.environ.setdefault("ADMIN_API_KEY", "test-admin-key")
 
 

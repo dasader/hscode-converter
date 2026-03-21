@@ -47,7 +47,6 @@ async def upload_batch(
     file: UploadFile = File(...),
     top_n: int = Form(default=5),
     confidence_threshold: float | None = Form(default=None),
-    model: str = Form(default="chatgpt-5.4-mini"),
 ):
     if not file.filename or not file.filename.endswith(".xlsx"):
         raise HTTPException(status_code=400, detail=".xlsx 파일만 지원합니다")
@@ -60,7 +59,7 @@ async def upload_batch(
         effective_top_n = top_n if confidence_threshold is None else 20
 
         job_id = _batch_service.create_job(
-            tmp.name, file.filename, effective_top_n, confidence_threshold, model,
+            tmp.name, file.filename, effective_top_n, confidence_threshold,
         )
 
         items = _batch_db.get_pending_items(job_id)

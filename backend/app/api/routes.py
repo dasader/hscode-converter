@@ -29,9 +29,9 @@ def get_pipeline(settings: Settings | None = None) -> ClassificationPipeline:
         if settings is None:
             settings = get_settings()
         _pipeline_instance = ClassificationPipeline(
-            keyword_extractor=KeywordExtractor(settings.openai_api_key),
-            vector_search=VectorSearchService(settings.openai_api_key, settings.chroma_db_path),
-            reranker=Reranker(settings.openai_api_key),
+            keyword_extractor=KeywordExtractor(settings.google_api_key, settings.gemini_model),
+            vector_search=VectorSearchService(settings.google_api_key, settings.chroma_db_path, settings.gemini_embedding_model),
+            reranker=Reranker(settings.google_api_key, settings.gemini_model),
             vector_search_limit=settings.vector_search_limit,
             similarity_threshold=settings.similarity_threshold,
             pipeline_timeout=settings.pipeline_timeout,
@@ -48,7 +48,7 @@ def ensure_data_dirs(settings: Settings) -> None:
 async def classify(request: ClassifyRequest):
     settings = get_settings()
     pipeline = get_pipeline(settings)
-    result = await pipeline.classify(request.description, request.top_n, request.model)
+    result = await pipeline.classify(request.description, request.top_n)
     conn = sqlite3.connect(settings.sqlite_db_path)
     cursor = conn.cursor()
     classify_results = []
@@ -127,7 +127,7 @@ async def refresh_data(
     records = crawler.load_from_excel(upload_path)
     crawler.save_to_sqlite(records, settings.sqlite_db_path, source_file=upload_path)
 
-    embedder = HskEmbedder(settings.openai_api_key, settings.chroma_db_path)
+    embedder = HskEmbedder(settings.google_api_key, settings.chroma_db_path, settings.gemini_embedding_model)
     embedder.embed_from_sqlite(settings.sqlite_db_path)
 
     return {"status": "ok", "records_count": len(records), "source_file": file.filename}

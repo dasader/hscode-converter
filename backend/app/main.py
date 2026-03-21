@@ -17,6 +17,11 @@ from app.services.rate_limiter import TokenBucketLimiter
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# 노이즈 로거 억제
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("google_genai").setLevel(logging.WARNING)
+logging.getLogger("chromadb.telemetry").setLevel(logging.CRITICAL)
+
 _data_ready = threading.Event()
 _loading_status = {"state": "idle", "message": ""}
 _batch_worker: BatchWorker | None = None

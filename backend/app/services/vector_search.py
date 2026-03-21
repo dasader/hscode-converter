@@ -21,7 +21,14 @@ class VectorSearchService:
     def __init__(self, api_key: str, chroma_db_path: str, embedding_model: str):
         self.client = genai.Client(api_key=api_key)
         self.embedding_model = embedding_model
-        self.chroma_client = chromadb.PersistentClient(path=chroma_db_path)
+        self.chroma_db_path = chroma_db_path
+        self._chroma_client: chromadb.ClientAPI | None = None
+
+    @property
+    def chroma_client(self) -> chromadb.ClientAPI:
+        if self._chroma_client is None:
+            self._chroma_client = chromadb.PersistentClient(path=self.chroma_db_path)
+        return self._chroma_client
 
     @staticmethod
     def deduplicate(candidates: list[SearchCandidate]) -> list[SearchCandidate]:

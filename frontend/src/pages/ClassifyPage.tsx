@@ -6,18 +6,11 @@ import ResultTable from '../components/ResultTable';
 import BatchTab from '../components/BatchTab';
 import './ClassifyPage.css';
 
-const MODEL_OPTIONS = [
-  { value: 'chatgpt-5.4-nano', label: 'GPT-5.4 Nano (빠름)' },
-  { value: 'chatgpt-5.4-mini', label: 'GPT-5.4 Mini (균형)' },
-  { value: 'chatgpt-5.4',      label: 'GPT-5.4 (정확)' },
-];
-
 export default function ClassifyPage() {
   const [activeTab, setActiveTab] = useState<'single' | 'batch'>('single');
   const [description, setDescription] = useState('');
   const [topN, setTopN] = useState(5);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0);
-  const [model, setModel] = useState('chatgpt-5.4-mini');
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<ClassifyResponse | null>(null);
   const [error, setError] = useState('');
@@ -50,7 +43,7 @@ export default function ClassifyPage() {
     setError('');
     setResponse(null);
     try {
-      const result = await classify({ description, top_n: topN, model });
+      const result = await classify({ description, top_n: topN });
       setResponse(result);
     } catch (e: any) {
       setError(e.response?.data?.detail || '분류 중 오류가 발생했습니다');
@@ -157,19 +150,6 @@ export default function ClassifyPage() {
                     style={{ '--slider-pct': `${sliderPct}%` } as React.CSSProperties}
                   />
                   <span className="confidence-value">{confidenceThreshold}%</span>
-                </div>
-
-                <div className="model-control">
-                  <label className="topn-label">모델</label>
-                  <select
-                    className="model-selector"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                  >
-                    {MODEL_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <button

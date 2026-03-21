@@ -6,12 +6,6 @@ import {
 import type { BatchProgressEvent } from '../api/types';
 import './BatchTab.css';
 
-const MODEL_OPTIONS = [
-  { value: 'chatgpt-5.4-nano', label: 'GPT-5.4 Nano (빠름)' },
-  { value: 'chatgpt-5.4-mini', label: 'GPT-5.4 Mini (균형)' },
-  { value: 'chatgpt-5.4',      label: 'GPT-5.4 (정확)' },
-];
-
 interface Props {
   isReady: boolean;
 }
@@ -23,7 +17,6 @@ export default function BatchTab({ isReady }: Props) {
   const [filterMode, setFilterMode] = useState<FilterMode>('topn');
   const [topN, setTopN] = useState(5);
   const [confidenceValue, setConfidenceValue] = useState(70);
-  const [model, setModel] = useState('chatgpt-5.4-mini');
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [jobId, setJobId] = useState<string | null>(null);
@@ -90,7 +83,7 @@ export default function BatchTab({ isReady }: Props) {
     setError('');
     try {
       const threshold = filterMode === 'confidence' ? confidenceValue : null;
-      const result = await uploadBatch(file, topN, threshold, model);
+      const result = await uploadBatch(file, topN, threshold);
       setJobId(result.job_id);
       setProgress({ completed: 0, failed: 0, total: result.total_items, percent: 0 });
       setPhase('processing');
@@ -155,12 +148,6 @@ export default function BatchTab({ isReady }: Props) {
               value={filterMode === 'topn' ? topN : confidenceValue}
               onChange={(e) => filterMode === 'topn' ? setTopN(Number(e.target.value)) : setConfidenceValue(Number(e.target.value))}
             />
-          </div>
-          <div className="batch-field">
-            <span className="batch-field-label">모델</span>
-            <select className="model-selector" value={model} onChange={(e) => setModel(e.target.value)}>
-              {MODEL_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
           </div>
         </div>
       </div>

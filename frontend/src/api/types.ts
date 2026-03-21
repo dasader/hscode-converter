@@ -1,7 +1,6 @@
 export interface ClassifyRequest {
   description: string;
   top_n: number;
-  model?: string;
 }
 
 export interface ClassifyResult {
@@ -50,7 +49,6 @@ export interface BatchJob {
   failed_items: number;
   top_n: number;
   confidence_threshold: number | null;
-  model: string;
   created_at: string;
   completed_at: string | null;
 }

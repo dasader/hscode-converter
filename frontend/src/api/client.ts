@@ -27,7 +27,6 @@ export async function uploadBatch(
   file: File,
   topN: number,
   confidenceThreshold: number | null,
-  model: string,
 ): Promise<BatchUploadResponse> {
   const formData = new FormData();
   formData.append('file', file);
@@ -35,7 +34,6 @@ export async function uploadBatch(
   if (confidenceThreshold !== null) {
     formData.append('confidence_threshold', String(confidenceThreshold / 100));
   }
-  formData.append('model', model);
   const { data } = await api.post<BatchUploadResponse>('/batch/upload', formData);
   return data;
 }

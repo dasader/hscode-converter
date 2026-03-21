@@ -1,6 +1,7 @@
 import json
 import logging
-from openai import AsyncOpenAI
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -9,16 +10,11 @@ SYSTEM_PROMPT = """당신은 R&D 기술 설명에서 관련 무역 상품을 추
 직접 언급되지 않았더라도 해당 기술로 생산되거나 사용되는 파생 제품도 포함하세요.
 결과는 JSON 배열 형식으로만 반환하세요. 예: ["양극재", "cathode material", "리튬이온 배터리"]"""
 
-MODEL_MAP = {
-    "chatgpt-5.4-nano": "gpt-5.4-nano",
-    "chatgpt-5.4-mini": "gpt-5.4-mini",
-    "chatgpt-5.4": "gpt-5.4",
-}
-
 
 class KeywordExtractor:
-    def __init__(self, openai_api_key: str):
-        self.client = AsyncOpenAI(api_key=openai_api_key)
+    def __init__(self, api_key: str, model: str):
+        self.client = genai.Client(api_key=api_key)
+        self.model = model
 
     @staticmethod
     def build_prompt(description: str) -> str:
@@ -36,17 +32,20 @@ class KeywordExtractor:
         keywords = [k.strip().strip('"').strip("'") for k in raw.replace("\n", ",").split(",")]
         return [k for k in keywords if k]
 
-    async def extract(self, description: str, model: str = "chatgpt-5.4-mini", max_retries: int = 2) -> list[str]:
-        openai_model = MODEL_MAP.get(model, "gpt-5.4-mini")
+    async def extract(self, description: str, max_retries: int = 2) -> list[str]:
         last_error = None
         for attempt in range(max_retries + 1):
             try:
-                response = await self.client.chat.completions.create(
-                    model=openai_model,
-                    messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": self.build_prompt(description)}],
-                    temperature=0.2,
+                response = await self.client.aio.models.generate_content(
+                    model=self.model,
+                    contents=self.build_prompt(description),
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        temperature=0.2,
+                        response_mime_type="application/json",
+                    ),
                 )
-                raw = response.choices[0].message.content or ""
+                raw = response.text or ""
                 keywords = self.parse_keywords(raw)
                 logger.info(f"키워드 추출 완료: {len(keywords)}개 — {keywords}")
                 return keywords

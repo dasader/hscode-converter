@@ -1,8 +1,10 @@
 import sqlite3
 import logging
+import time
 from typing import Iterator
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 import chromadb
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,8 @@ class HskEmbedder:
     """
 
     EMBEDDING_DIMENSIONALITY = 1536
-    BATCH_SIZE = 100
+    BATCH_SIZE = 500
+    MAX_RETRIES = 5
 
     def __init__(self, api_key: str, chroma_db_path: str, embedding_model: str):
         self.client = genai.Client(api_key=api_key)
@@ -86,9 +89,18 @@ class HskEmbedder:
         logger.info(f"ChromaDB 임베딩 완료: 총 {len(rows)}건")
 
     def _get_embeddings(self, texts: list[str]) -> list[list[float]]:
-        response = self.client.models.embed_content(
-            model=self.embedding_model,
-            contents=texts,
-            config=types.EmbedContentConfig(output_dimensionality=self.EMBEDDING_DIMENSIONALITY),
-        )
-        return [list(e.values) for e in response.embeddings]
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                response = self.client.models.embed_content(
+                    model=self.embedding_model,
+                    contents=texts,
+                    config=types.EmbedContentConfig(output_dimensionality=self.EMBEDDING_DIMENSIONALITY),
+                )
+                return [list(e.values) for e in response.embeddings]
+            except ClientError as e:
+                if e.code == 429 and attempt < self.MAX_RETRIES - 1:
+                    wait = min(2 ** attempt * 5, 60)
+                    logger.warning(f"Rate limit 초과, {wait}초 후 재시도 ({attempt + 1}/{self.MAX_RETRIES})")
+                    time.sleep(wait)
+                else:
+                    raise

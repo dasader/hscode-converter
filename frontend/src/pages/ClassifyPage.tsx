@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { classifyStream } from '../api/client';
@@ -231,13 +231,13 @@ export default function ClassifyPage() {
               <div className="pipeline-indicator">
                 <div className="pipeline-steps">
                   {steps.map((step, i) => (
-                    <div key={step}>
+                    <React.Fragment key={step}>
                       {i > 0 && <div className={`pipeline-line${i <= currentIdx ? ' done' : ''}`} />}
                       <div className={`pipeline-step${i === currentIdx ? ' active' : ''}${i < currentIdx ? ' done' : ''}`}>
                         <div className="step-dot" />
                         <span>{labels[step]}</span>
                       </div>
-                    </div>
+                    </React.Fragment>
                   ))}
                 </div>
                 <p className="pipeline-note">AI가 기술 설명을 분석하고 있습니다...</p>

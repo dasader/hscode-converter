@@ -78,7 +78,7 @@ class BatchService:
         if confidence_threshold is None:
             num_code_cols = top_n
         else:
-            num_code_cols = min(max_codes, 20)
+            num_code_cols = min(max_codes, 30)
 
         headers = ["과제명", "기술설명", "상태", "추출 키워드"]
         for i in range(1, num_code_cols + 1):

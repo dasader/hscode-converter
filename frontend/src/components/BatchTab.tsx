@@ -143,7 +143,7 @@ export default function BatchTab({ isReady }: Props) {
               type="number"
               className="batch-input"
               min={filterMode === 'topn' ? 1 : 0}
-              max={filterMode === 'topn' ? 20 : 100}
+              max={filterMode === 'topn' ? 30 : 100}
               step={filterMode === 'topn' ? 1 : 5}
               value={filterMode === 'topn' ? topN : confidenceValue}
               onChange={(e) => filterMode === 'topn' ? setTopN(Number(e.target.value)) : setConfidenceValue(Number(e.target.value))}

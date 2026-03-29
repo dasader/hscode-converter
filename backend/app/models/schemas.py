@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class ClassifyRequest(BaseModel):
     description: str = Field(..., min_length=10, max_length=2000)
-    top_n: int = Field(default=5, ge=1, le=20)
+    top_n: int = Field(default=5, ge=1, le=30)
 
     @field_validator("description")
     @classmethod

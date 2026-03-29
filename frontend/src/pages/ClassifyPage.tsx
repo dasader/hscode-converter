@@ -167,7 +167,7 @@ export default function ClassifyPage() {
                 <div className="topn-control">
                   <label className="topn-label">결과 수</label>
                   <div className="topn-selector">
-                    {[3, 5, 10, 15, 20].map(n => (
+                    {[3, 5, 10, 15, 20, 30].map(n => (
                       <button
                         key={n}
                         className={`topn-btn ${topN === n ? 'active' : ''}`}

@@ -78,7 +78,7 @@ class BatchWorker:
 
         top_n = job["top_n"]
         confidence_threshold = job.get("confidence_threshold")
-        effective_top_n = 20 if confidence_threshold is not None else top_n
+        effective_top_n = self.settings.max_top_n_with_threshold if confidence_threshold is not None else top_n
 
         # Exponential backoff retry for retryable errors
         pipeline_result = None

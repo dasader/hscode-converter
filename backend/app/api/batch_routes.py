@@ -56,7 +56,8 @@ async def upload_batch(
         shutil.copyfileobj(file.file, tmp)
         tmp.close()
 
-        effective_top_n = top_n if confidence_threshold is None else 30
+        settings = Settings()
+        effective_top_n = top_n if confidence_threshold is None else settings.max_top_n_with_threshold
 
         job_id = _batch_service.create_job(
             tmp.name, file.filename, effective_top_n, confidence_threshold,

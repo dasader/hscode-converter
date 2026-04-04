@@ -67,7 +67,10 @@ def _build_classify_results(result, settings) -> ClassifyResponse:
 async def classify(request: ClassifyRequest):
     settings = get_settings()
     pipeline = get_pipeline(settings)
-    result = await pipeline.classify(request.description, request.top_n)
+    effective_top_n = settings.max_top_n_with_threshold if request.confidence_threshold is not None else request.top_n
+    result = await pipeline.classify(request.description, effective_top_n)
+    if request.confidence_threshold is not None:
+        result.results = [r for r in result.results if r.get("confidence", 0) >= request.confidence_threshold]
     return _build_classify_results(result, settings)
 
 
@@ -88,8 +91,9 @@ async def classify_stream(request: ClassifyRequest):
         step_queue.put_nowait(step)
 
     async def event_stream():
+        effective_top_n = settings.max_top_n_with_threshold if request.confidence_threshold is not None else request.top_n
         task = asyncio.create_task(
-            pipeline.classify(request.description, request.top_n, on_step=on_step)
+            pipeline.classify(request.description, effective_top_n, on_step=on_step)
         )
         while not task.done():
             try:
@@ -102,6 +106,8 @@ async def classify_stream(request: ClassifyRequest):
             step = step_queue.get_nowait()
             yield f"data: {json.dumps({'type': 'step', 'step': STEP_MAP[step]})}\n\n"
         result = await task
+        if request.confidence_threshold is not None:
+            result.results = [r for r in result.results if r.get("confidence", 0) >= request.confidence_threshold]
         response = _build_classify_results(result, settings)
         yield f"data: {json.dumps({'type': 'result', 'data': response.model_dump()})}\n\n"
 

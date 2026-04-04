@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     sqlite_db_path: str = "./data/hsk.db"
     max_input_length: int = 2000
     max_top_n: int = 30
+    max_top_n_with_threshold: int = 50
     vector_search_limit: int = 50
     similarity_threshold: float = 1.5
     pipeline_timeout: int = 120

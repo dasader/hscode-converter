@@ -118,7 +118,7 @@ def create_app() -> FastAPI:
             pipeline = get_pipeline(settings)
             _batch_worker = BatchWorker(
                 db=batch_db, pipeline=pipeline, settings=settings,
-                num_workers=10, rate_limiter=rate_limiter,
+                num_workers=5, rate_limiter=rate_limiter,
             )
             init_batch(batch_db, batch_service, _batch_worker)
 

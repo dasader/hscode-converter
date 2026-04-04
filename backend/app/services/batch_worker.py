@@ -93,7 +93,8 @@ class BatchWorker:
             except RETRYABLE_ERRORS as e:
                 last_error = e
                 wait = 2 ** (attempt + 1)
-                logger.warning(f"Item {item_id} 재시도 {attempt + 1}/{MAX_RETRIES}: {e}, {wait}s 대기")
+                error_msg = str(e) or repr(e)
+                logger.warning(f"Item {item_id} 재시도 {attempt + 1}/{MAX_RETRIES}: {error_msg}, {wait}s 대기")
                 await asyncio.sleep(wait)
             except Exception as e:
                 last_error = e
@@ -101,7 +102,7 @@ class BatchWorker:
 
         if pipeline_result is None:
             error = last_error or Exception("최대 재시도 초과")
-            error_msg = str(error)[:500]
+            error_msg = (str(error) or repr(error))[:500]
             logger.warning(f"Item {item_id} 처리 실패 (재시도 불가): {error_msg}")
             self.db.update_item_status(item_id, "failed", error_message=error_msg)
             await self._notify_progress(job_id, {

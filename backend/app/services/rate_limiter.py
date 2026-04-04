@@ -37,8 +37,14 @@ class TokenBucketLimiter:
         self.rpm_bucket = TokenBucket(capacity=effective_rpm, refill_rate=effective_rpm / 60.0)
         self.tpm_bucket = TokenBucket(capacity=effective_tpm, refill_rate=effective_tpm / 60.0)
 
-    async def acquire(self, rpm: int = 1, tpm: int = 0):
+    async def acquire(self, rpm: int = 1, tpm: int = 0, deadline: float | None = None):
+        start = time.monotonic()
         while True:
+            if deadline is not None and time.monotonic() >= deadline:
+                elapsed = time.monotonic() - start
+                raise TimeoutError(
+                    f"Rate limiter 대기 시간 초과: {elapsed:.1f}s 경과 (rpm={rpm}, tpm={tpm})"
+                )
             rpm_ok = await self.rpm_bucket.consume(rpm)
             if not rpm_ok:
                 await asyncio.sleep(0.1)

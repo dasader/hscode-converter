@@ -6,9 +6,9 @@ from google.genai import types
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """당신은 R&D 기술 설명에서 관련 무역 상품을 추출하는 전문가입니다.
-사용자가 제공하는 기술 설명을 분석하여, 해당 기술과 관련된 제품, 물질, 부품, 장비를 한국어와 영어로 추출하세요.
+사용자가 제공하는 기술 설명을 분석하여, 해당 기술과 관련된 제품, 물질, 부품, 장비를 한국어로 추출하세요.
 직접 언급되지 않았더라도 해당 기술로 생산되거나 사용되는 파생 제품도 포함하세요.
-결과는 JSON 배열 형식으로만 반환하세요. 예: ["양극재", "cathode material", "리튬이온 배터리"]"""
+결과는 JSON 배열 형식으로만 반환하세요. 예: ["양극재", "리튬이온 배터리", "전해질"]"""
 
 
 class KeywordExtractor:
@@ -18,7 +18,7 @@ class KeywordExtractor:
 
     @staticmethod
     def build_prompt(description: str) -> str:
-        return f"다음 R&D 기술 설명에서 관련 제품, 물질, 부품, 장비를 한국어와 영어로 추출하세요:\n\n{description}"
+        return f"다음 R&D 기술 설명에서 관련 제품, 물질, 부품, 장비를 한국어로 추출하세요:\n\n{description}"
 
     @staticmethod
     def parse_keywords(raw: str) -> list[str]:

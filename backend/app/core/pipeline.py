@@ -37,32 +37,33 @@ class ClassificationPipeline:
     async def classify(self, description: str, top_n: int = 5,
                        on_step: Callable[[PipelineStep], None] | None = None,
                        rate_limiter=None) -> PipelineResult:
+        deadline = time.monotonic() + self.pipeline_timeout
         return await asyncio.wait_for(
-            self._classify_impl(description, top_n, on_step, rate_limiter),
+            self._classify_impl(description, top_n, on_step, rate_limiter, deadline),
             timeout=self.pipeline_timeout,
         )
 
     async def _classify_impl(self, description: str, top_n: int = 5,
                               on_step: Callable[[PipelineStep], None] | None = None,
-                              rate_limiter=None) -> PipelineResult:
+                              rate_limiter=None, deadline: float | None = None) -> PipelineResult:
         start = time.time()
         if on_step:
             on_step(PipelineStep.KEYWORD_EXTRACTION)
         if rate_limiter:
-            await rate_limiter.acquire(rpm=1, tpm=470)
+            await rate_limiter.acquire(rpm=1, tpm=470, deadline=deadline)
         keywords = await self.keyword_extractor.extract(description)
 
         if on_step:
             on_step(PipelineStep.VECTOR_SEARCH)
         candidates = await self.vector_search.search(
             keywords, limit=self.vector_search_limit,
-            threshold=self.similarity_threshold, rate_limiter=rate_limiter,
+            threshold=self.similarity_threshold, rate_limiter=rate_limiter, deadline=deadline,
         )
 
         if on_step:
             on_step(PipelineStep.RERANKING)
         if rate_limiter:
-            await rate_limiter.acquire(rpm=1, tpm=950)
+            await rate_limiter.acquire(rpm=1, tpm=950, deadline=deadline)
         results = await self.reranker.rerank(description, candidates, top_n)
 
         elapsed_ms = int((time.time() - start) * 1000)

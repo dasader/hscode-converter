@@ -4,7 +4,7 @@ import time
 from typing import Iterator
 from google import genai
 from google.genai import types
-from google.genai.errors import ClientError
+from google.genai.errors import ClientError, ServerError
 import chromadb
 
 logger = logging.getLogger(__name__)
@@ -97,10 +97,12 @@ class HskEmbedder:
                     config=types.EmbedContentConfig(output_dimensionality=self.EMBEDDING_DIMENSIONALITY),
                 )
                 return [list(e.values) for e in response.embeddings]
-            except ClientError as e:
-                if e.code == 429 and attempt < self.MAX_RETRIES - 1:
+            except (ClientError, ServerError) as e:
+                code = getattr(e, "code", None) or getattr(e, "status_code", None)
+                retryable = code in (429, 503) or isinstance(e, ServerError)
+                if retryable and attempt < self.MAX_RETRIES - 1:
                     wait = min(2 ** attempt * 5, 60)
-                    logger.warning(f"Rate limit 초과, {wait}초 후 재시도 ({attempt + 1}/{self.MAX_RETRIES})")
+                    logger.warning(f"API 오류 ({code}), {wait}초 후 재시도 ({attempt + 1}/{self.MAX_RETRIES}): {e}")
                     time.sleep(wait)
                 else:
                     raise

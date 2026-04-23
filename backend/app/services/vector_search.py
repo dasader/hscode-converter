@@ -45,13 +45,15 @@ class VectorSearchService:
     async def search(self, keywords: list[str], limit: int = 50, threshold: float = 0.3,
                      rate_limiter=None, deadline: float | None = None) -> list[SearchCandidate]:
         collection = await asyncio.to_thread(self.chroma_client.get_collection, "hsk_codes")
+        total = await asyncio.to_thread(collection.count)
+        n_results = max(1, min(limit, 50, total))
         all_candidates: list[SearchCandidate] = []
         if rate_limiter:
             await rate_limiter.acquire(rpm=1, tpm=10 * len(keywords), deadline=deadline)
         embeddings = await self._get_embeddings_batch(keywords)
         results = await asyncio.to_thread(
             collection.query, query_embeddings=embeddings,
-            n_results=min(limit, 50), include=["documents", "distances", "metadatas"],
+            n_results=n_results, include=["documents", "distances", "metadatas"],
             where={"level": 5},
         )
         for ids, docs, dists in zip(results["ids"], results["documents"], results["distances"]):

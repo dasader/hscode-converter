@@ -24,7 +24,7 @@ async def test_classify_validates_short_input(app):
 async def test_classify_validates_top_n(app):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/classify", json={"description": "리튬이온 배터리 양극재 제조 기술", "top_n": 25})
+        resp = await client.post("/api/v1/classify", json={"description": "리튬이온 배터리 양극재 제조 기술", "top_n": 35})
         assert resp.status_code == 422
 
 

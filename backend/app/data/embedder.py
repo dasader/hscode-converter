@@ -58,65 +58,33 @@ class HskEmbedder:
             ).fetchall()
         conn.close()
 
-        # 임시 컬렉션에 먼저 쓰고 성공 후 교체 (기존 DB 보호)
-        tmp_name = "hsk_codes_tmp"
-        try:
-            self.chroma_client.delete_collection(tmp_name)
-        except Exception:
-            pass
-        tmp_collection = self.chroma_client.create_collection(
-            name=tmp_name,
-            metadata={"hnsw:space": "cosine"},
-        )
-
-        try:
-            for batch in self.chunk_list(rows, self.BATCH_SIZE):
-                if has_full_name:
-                    texts = [self.build_embedding_text(row[1], row[2], row[5]) for row in batch]
-                else:
-                    texts = [self.build_embedding_text(row[1], row[2]) for row in batch]
-
-                embeddings = self._get_embeddings(texts)
-                tmp_collection.add(
-                    ids=[row[0] for row in batch],
-                    embeddings=embeddings,
-                    documents=texts,
-                    metadatas=[
-                        {"code": row[0], "level": row[3], "parent_code": row[4] or ""}
-                        for row in batch
-                    ],
-                )
-                logger.info(f"임베딩 배치 저장: {len(batch)}건")
-        except Exception:
-            self.chroma_client.delete_collection(tmp_name)
-            raise
-
-        # 모든 배치 성공 후 교체
-        try:
-            self.chroma_client.delete_collection("hsk_codes")
-        except Exception:
-            pass
-        self.chroma_client.create_collection(
+        for name in ("hsk_codes_tmp", "hsk_codes"):
+            try:
+                self.chroma_client.delete_collection(name)
+            except Exception:
+                pass
+        collection = self.chroma_client.create_collection(
             name="hsk_codes",
             metadata={"hnsw:space": "cosine"},
         )
-        # ChromaDB는 rename을 지원하지 않으므로 데이터 복사
-        data = tmp_collection.get(include=["embeddings", "documents", "metadatas"])
-        if data["ids"]:
-            collection = self.chroma_client.get_collection("hsk_codes")
-            for chunk_ids, chunk_embs, chunk_docs, chunk_metas in zip(
-                self.chunk_list(data["ids"], self.BATCH_SIZE),
-                self.chunk_list(data["embeddings"], self.BATCH_SIZE),
-                self.chunk_list(data["documents"], self.BATCH_SIZE),
-                self.chunk_list(data["metadatas"], self.BATCH_SIZE),
-            ):
-                collection.add(
-                    ids=chunk_ids,
-                    embeddings=chunk_embs,
-                    documents=chunk_docs,
-                    metadatas=chunk_metas,
-                )
-        self.chroma_client.delete_collection(tmp_name)
+
+        for batch in self.chunk_list(rows, self.BATCH_SIZE):
+            if has_full_name:
+                texts = [self.build_embedding_text(row[1], row[2], row[5]) for row in batch]
+            else:
+                texts = [self.build_embedding_text(row[1], row[2]) for row in batch]
+
+            embeddings = self._get_embeddings(texts)
+            collection.add(
+                ids=[row[0] for row in batch],
+                embeddings=embeddings,
+                documents=texts,
+                metadatas=[
+                    {"code": row[0], "level": row[3], "parent_code": row[4] or ""}
+                    for row in batch
+                ],
+            )
+            logger.info(f"임베딩 배치 저장: {len(batch)}건")
 
         logger.info(f"ChromaDB 임베딩 완료: 총 {len(rows)}건")
 

@@ -46,7 +46,9 @@ class VectorSearchService:
                      rate_limiter=None, deadline: float | None = None) -> list[SearchCandidate]:
         collection = await asyncio.to_thread(self.chroma_client.get_collection, "hsk_codes")
         total = await asyncio.to_thread(collection.count)
-        n_results = max(1, min(limit, 50, total))
+        if total == 0:
+            return []
+        n_results = min(limit, 50, total)
         all_candidates: list[SearchCandidate] = []
         if rate_limiter:
             await rate_limiter.acquire(rpm=1, tpm=10 * len(keywords), deadline=deadline)

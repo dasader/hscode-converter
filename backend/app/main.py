@@ -39,12 +39,22 @@ def _db_has_data(db_path: str) -> bool:
         return False
 
 
-def _chroma_has_data(chroma_path: str) -> bool:
+def _chroma_has_data(chroma_path: str, sqlite_db_path: str | None = None) -> bool:
     try:
         import chromadb
         client = chromadb.PersistentClient(path=chroma_path)
         collection = client.get_collection("hsk_codes")
-        return collection.count() > 0
+        chroma_count = collection.count()
+        if chroma_count == 0:
+            return False
+        if sqlite_db_path and os.path.exists(sqlite_db_path):
+            conn = sqlite3.connect(sqlite_db_path)
+            sqlite_count = conn.execute("SELECT COUNT(*) FROM hsk_codes WHERE level=5").fetchone()[0]
+            conn.close()
+            if sqlite_count > 0 and chroma_count < sqlite_count * 0.9:
+                logger.warning(f"ChromaDB 불완전: {chroma_count}/{sqlite_count}건 — 재임베딩 필요")
+                return False
+        return True
     except Exception:
         return False
 
@@ -53,7 +63,7 @@ def _auto_load_sync(settings: Settings) -> None:
     global _loading_status
     try:
         db_ok = _db_has_data(settings.sqlite_db_path)
-        chroma_ok = _chroma_has_data(settings.chroma_db_path)
+        chroma_ok = _chroma_has_data(settings.chroma_db_path, settings.sqlite_db_path)
 
         if db_ok and chroma_ok:
             logger.info("HSK 데이터와 임베딩이 이미 존재합니다.")

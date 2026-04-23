@@ -14,9 +14,16 @@ from app.services.reranker import Reranker
 from app.data.crawler import HskCrawler
 from app.data.embedder import HskEmbedder
 from app.models.schemas import ClassifyRequest, ClassifyResult, ClassifyResponse, HskCodeDetail, HskSearchResult
+from app.core import state
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _require_data_ready():
+    if state.loading_status.get("state") != "ready":
+        msg = state.loading_status.get("message", "데이터 준비 중입니다.")
+        raise HTTPException(status_code=503, detail=msg)
 
 
 def get_settings() -> Settings:
@@ -65,6 +72,7 @@ def _build_classify_results(result, settings) -> ClassifyResponse:
 
 @router.post("/classify", response_model=ClassifyResponse)
 async def classify(request: ClassifyRequest):
+    _require_data_ready()
     settings = get_settings()
     pipeline = get_pipeline(settings)
     effective_top_n = settings.max_top_n_with_threshold if request.confidence_threshold is not None else request.top_n
@@ -83,6 +91,7 @@ STEP_MAP = {
 
 @router.post("/classify/stream")
 async def classify_stream(request: ClassifyRequest):
+    _require_data_ready()
     settings = get_settings()
     pipeline = get_pipeline(settings)
     step_queue: asyncio.Queue = asyncio.Queue()

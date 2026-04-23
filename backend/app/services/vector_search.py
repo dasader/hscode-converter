@@ -53,11 +53,17 @@ class VectorSearchService:
         if rate_limiter:
             await rate_limiter.acquire(rpm=1, tpm=10 * len(keywords), deadline=deadline)
         embeddings = await self._get_embeddings_batch(keywords)
-        results = await asyncio.to_thread(
-            collection.query, query_embeddings=embeddings,
-            n_results=n_results, include=["documents", "distances", "metadatas"],
-            where={"level": 5},
-        )
+        try:
+            results = await asyncio.to_thread(
+                collection.query, query_embeddings=embeddings,
+                n_results=n_results, include=["documents", "distances", "metadatas"],
+                where={"level": 5},
+            )
+        except RuntimeError as e:
+            if "contigious 2D array" in str(e):
+                logger.warning(f"HNSW 쿼리 실패 — 인덱스 미준비 또는 손상: {e}")
+                return []
+            raise
         for ids, docs, dists in zip(results["ids"], results["documents"], results["distances"]):
             for code, doc, dist in zip(ids, docs, dists):
                 all_candidates.append(SearchCandidate(code=code, name=doc, distance=dist))

@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     google_api_key: str
     admin_api_key: str
-    gemini_model: str = "gemini-3-flash-preview"
+    gemini_model: str = "gemini-3.5-flash"
     gemini_embedding_model: str = "gemini-embedding-001"
     chroma_db_path: str = "./data/chromadb"
     sqlite_db_path: str = "./data/hsk.db"

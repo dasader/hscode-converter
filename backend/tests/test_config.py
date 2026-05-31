@@ -23,5 +23,5 @@ def test_settings_defaults(monkeypatch):
     assert settings.max_top_n_with_threshold == 50
     assert settings.vector_search_limit == 50
     assert settings.similarity_threshold == 1.5
-    assert settings.gemini_model == "gemini-3-flash-preview"
+    assert settings.gemini_model == "gemini-3.5-flash"
     assert settings.gemini_embedding_model == "gemini-embedding-001"

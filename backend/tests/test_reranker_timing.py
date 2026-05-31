@@ -13,7 +13,7 @@ from app.services.vector_search import SearchCandidate
 load_dotenv()
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 
 # 실제 배치 처리와 유사한 후보 50개
 MOCK_CANDIDATES = [

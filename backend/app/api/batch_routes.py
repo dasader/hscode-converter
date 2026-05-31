@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from starlette.background import BackgroundTask
 from app.core.config import Settings
+from app.services.result_builder import effective_top_n
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/batch")
@@ -57,10 +58,10 @@ async def upload_batch(
         tmp.close()
 
         settings = Settings()
-        effective_top_n = top_n if confidence_threshold is None else settings.max_top_n_with_threshold
+        eff_top_n = effective_top_n(top_n, confidence_threshold, settings.max_top_n_with_threshold)
 
         job_id = _batch_service.create_job(
-            tmp.name, file.filename, effective_top_n, confidence_threshold,
+            tmp.name, file.filename, eff_top_n, confidence_threshold,
         )
 
         items = _batch_db.get_pending_items(job_id)

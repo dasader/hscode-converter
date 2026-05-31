@@ -38,7 +38,6 @@ class BatchDB:
                 failed_items INTEGER DEFAULT 0,
                 top_n INTEGER DEFAULT 5,
                 confidence_threshold REAL,
-                model TEXT DEFAULT 'chatgpt-5.4-mini',
                 created_at TEXT NOT NULL,
                 completed_at TEXT
             );
@@ -85,6 +84,9 @@ class BatchDB:
                 )
             conn.commit()
             conn.close()
+
+    def mark_job_processing(self, job_id):
+        self._execute("UPDATE batch_jobs SET status='processing' WHERE job_id=? AND status='pending'", (job_id,))
 
     def get_job(self, job_id):
         conn = self._connect()
@@ -155,7 +157,7 @@ class BatchDB:
     def recover_incomplete_items(self):
         with self._write_lock:
             conn = self._connect()
-            conn.execute(f"UPDATE batch_items SET status='failed', error_message='서버 재시작으로 인한 실패' WHERE status='processing' AND retry_count>={MAX_RETRIES}")
+            conn.execute("UPDATE batch_items SET status='failed', error_message='서버 재시작으로 인한 실패' WHERE status='processing' AND retry_count>=?", (MAX_RETRIES,))
             conn.execute("UPDATE batch_items SET status='pending' WHERE status='processing'")
             conn.commit()
             rows = conn.execute("SELECT * FROM batch_items WHERE status='pending' ORDER BY row_index").fetchall()

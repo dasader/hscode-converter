@@ -4,6 +4,7 @@ import {
   downloadBatchResult, retryBatchFailed,
 } from '../api/client';
 import type { BatchProgressEvent } from '../api/types';
+import { downloadBlob } from '../utils/download';
 import './BatchTab.css';
 
 interface Props {
@@ -38,12 +39,7 @@ export default function BatchTab({ isReady }: Props) {
 
   const handleTemplate = async () => {
     const blob = await downloadTemplate();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'HSCode_배치분류_템플릿.xlsx';
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, 'HSCode_배치분류_템플릿.xlsx');
   };
 
   const handleFileSelect = (selected: File | null) => {
@@ -59,18 +55,17 @@ export default function BatchTab({ isReady }: Props) {
     cleanupSSE();
     const es = subscribeBatchProgress(jId);
     eventSourceRef.current = es;
+    const applyProgress = (data: BatchProgressEvent, percent: number) =>
+      setProgress({
+        completed: data.completed ?? 0, failed: data.failed ?? 0,
+        total: data.total ?? 0, percent,
+      });
     es.onmessage = (event) => {
       const data: BatchProgressEvent = JSON.parse(event.data);
       if (data.type === 'progress') {
-        setProgress({
-          completed: data.completed ?? 0, failed: data.failed ?? 0,
-          total: data.total ?? 0, percent: data.percent ?? 0,
-        });
+        applyProgress(data, data.percent ?? 0);
       } else if (data.type === 'complete') {
-        setProgress({
-          completed: data.completed ?? 0, failed: data.failed ?? 0,
-          total: data.total ?? 0, percent: 100,
-        });
+        applyProgress(data, 100);
         setPhase('complete');
         cleanupSSE();
       }
@@ -98,12 +93,7 @@ export default function BatchTab({ isReady }: Props) {
   const handleDownload = async () => {
     if (!jobId) return;
     const blob = await downloadBatchResult(jobId);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${file?.name?.replace('.xlsx', '') || 'batch'}_결과.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${file?.name?.replace('.xlsx', '') || 'batch'}_결과.xlsx`);
   };
 
   const handleRetry = async () => {

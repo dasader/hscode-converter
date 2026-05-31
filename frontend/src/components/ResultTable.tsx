@@ -6,6 +6,12 @@ interface Props {
   onCodeClick: (code: string) => void;
 }
 
+function confidenceGradient(confidence: number): string {
+  if (confidence > 0.7) return 'linear-gradient(90deg, #22c55e, #4ade80)';
+  if (confidence > 0.4) return 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+  return 'linear-gradient(90deg, #ef4444, #f87171)';
+}
+
 export default function ResultTable({ results, onCodeClick }: Props) {
   if (results.length === 0) return null;
 
@@ -13,7 +19,7 @@ export default function ResultTable({ results, onCodeClick }: Props) {
     <div className="result-table-wrap">
       {results.map((r, i) => (
         <div
-          key={r.hsk_code}
+          key={`${r.rank}-${r.hsk_code}`}
           className="result-card"
           onClick={() => onCodeClick(r.hsk_code)}
           style={{ animationDelay: `${i * 0.06}s` }}
@@ -31,11 +37,7 @@ export default function ResultTable({ results, onCodeClick }: Props) {
                     className="confidence-fill"
                     style={{
                       width: `${r.confidence * 100}%`,
-                      background: r.confidence > 0.7
-                        ? 'linear-gradient(90deg, #22c55e, #4ade80)'
-                        : r.confidence > 0.4
-                          ? 'linear-gradient(90deg, #f59e0b, #fbbf24)'
-                          : 'linear-gradient(90deg, #ef4444, #f87171)',
+                      background: confidenceGradient(r.confidence),
                     }}
                   />
                 </div>

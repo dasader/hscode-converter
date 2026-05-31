@@ -44,9 +44,7 @@ class HskCrawler:
             return f"{code[:2]}.{code[2:]}"
         if len(code) == 6:
             return f"{code[:4]}.{code[4:]}"
-        if len(code) == 8:
-            return f"{code[:4]}.{code[4:6]}-{code[6:]}"
-        if len(code) == 10:
+        if len(code) in (8, 10):
             return f"{code[:4]}.{code[4:6]}-{code[6:]}"
         return code
 
@@ -253,6 +251,9 @@ class HskCrawler:
               r.category_large, r.category_medium, r.category_small, r.category_detail,
               r.full_name) for r in records],
         )
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_hsk_parent ON hsk_codes(parent_code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_hsk_level ON hsk_codes(level)")
 
         if source_file:
             cursor.execute(

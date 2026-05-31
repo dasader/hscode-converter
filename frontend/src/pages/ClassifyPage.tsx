@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { classifyStream } from '../api/client';
 import type { ClassifyResponse } from '../api/types';
 import ResultTable from '../components/ResultTable';
 import BatchTab from '../components/BatchTab';
+import { stripHskCode } from '../utils/hskCode';
 import './ClassifyPage.css';
 
 export default function ClassifyPage() {
@@ -17,20 +18,25 @@ export default function ClassifyPage() {
   const [error, setError] = useState('');
   const [pipelineStep, setPipelineStep] = useState<string | null>(null);
   const [dataStatus, setDataStatus] = useState<{ state: string; message: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
     const checkStatus = async () => {
       try {
         const { data } = await axios.get('/api/v1/data/status');
+        if (cancelled) return;
         setDataStatus(data);
         if (data.state !== 'ready' && data.state !== 'error' && data.state !== 'no_data') {
-          setTimeout(checkStatus, 3000);
+          timer = setTimeout(checkStatus, 3000);
         }
       } catch {
-        setTimeout(checkStatus, 3000);
+        if (!cancelled) timer = setTimeout(checkStatus, 3000);
       }
     };
     checkStatus();
+    return () => { cancelled = true; clearTimeout(timer); };
   }, []);
 
   const isReady = dataStatus?.state === 'ready';
@@ -59,16 +65,16 @@ export default function ClassifyPage() {
     }
   };
 
-  const filteredResults = response
-    ? response.results.filter(r => r.confidence * 100 >= confidenceThreshold)
-    : null;
+  const filteredResults = useMemo(
+    () => response ? response.results.filter(r => r.confidence * 100 >= confidenceThreshold) : null,
+    [response, confidenceThreshold],
+  );
 
   const sliderPct = confidenceThreshold;
-  const [copied, setCopied] = useState(false);
 
   const handleCopyAllCodes = async () => {
     if (!filteredResults || filteredResults.length === 0) return;
-    const codes = filteredResults.map(r => r.hsk_code.replace(/[.\-\s]/g, '')).join(', ');
+    const codes = filteredResults.map(r => stripHskCode(r.hsk_code)).join(', ');
     await navigator.clipboard.writeText(codes);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

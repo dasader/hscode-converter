@@ -4,6 +4,7 @@ import os
 import shutil
 import sqlite3
 import logging
+from functools import lru_cache
 from fastapi import APIRouter, HTTPException, Header, UploadFile, File
 from fastapi.responses import StreamingResponse
 from app.core.config import Settings
@@ -14,6 +15,7 @@ from app.services.reranker import Reranker
 from app.data.crawler import HskCrawler
 from app.data.embedder import HskEmbedder
 from app.models.schemas import ClassifyRequest, ClassifyResult, ClassifyResponse, HskCodeDetail, HskSearchResult
+from app.services.result_builder import effective_top_n, filter_by_confidence, enrich_results
 from app.core import state
 
 logger = logging.getLogger(__name__)
@@ -26,6 +28,7 @@ def _require_data_ready():
         raise HTTPException(status_code=503, detail=msg)
 
 
+@lru_cache
 def get_settings() -> Settings:
     return Settings()
 
@@ -55,18 +58,14 @@ def ensure_data_dirs(settings: Settings) -> None:
 
 
 def _build_classify_results(result, settings) -> ClassifyResponse:
-    conn = sqlite3.connect(settings.sqlite_db_path)
-    cursor = conn.cursor()
-    classify_results = []
-    for i, item in enumerate(result.results, 1):
-        row = cursor.execute("SELECT name_kr, name_en FROM hsk_codes WHERE code = ?", (item["code"],)).fetchone()
-        classify_results.append(ClassifyResult(
-            rank=i, hsk_code=HskCrawler.format_code(item["code"]),
-            name_kr=row[0] if row else item.get("code", ""),
-            name_en=row[1] if row else None,
-            confidence=item.get("confidence", 0.0), reason=item.get("reason", ""),
-        ))
-    conn.close()
+    classify_results = [
+        ClassifyResult(
+            rank=e["rank"], hsk_code=e["hsk_code"],
+            name_kr=e["name_kr"], name_en=e["name_en"],
+            confidence=e["confidence"], reason=e["reason"],
+        )
+        for e in enrich_results(result.results, settings.sqlite_db_path)
+    ]
     return ClassifyResponse(results=classify_results, keywords_extracted=result.keywords, processing_time_ms=result.processing_time_ms)
 
 
@@ -75,10 +74,9 @@ async def classify(request: ClassifyRequest):
     _require_data_ready()
     settings = get_settings()
     pipeline = get_pipeline(settings)
-    effective_top_n = settings.max_top_n_with_threshold if request.confidence_threshold is not None else request.top_n
-    result = await pipeline.classify(request.description, effective_top_n)
-    if request.confidence_threshold is not None:
-        result.results = [r for r in result.results if r.get("confidence", 0) >= request.confidence_threshold]
+    top_n = effective_top_n(request.top_n, request.confidence_threshold, settings.max_top_n_with_threshold)
+    result = await pipeline.classify(request.description, top_n)
+    result.results = filter_by_confidence(result.results, request.confidence_threshold)
     return _build_classify_results(result, settings)
 
 
@@ -100,9 +98,9 @@ async def classify_stream(request: ClassifyRequest):
         step_queue.put_nowait(step)
 
     async def event_stream():
-        effective_top_n = settings.max_top_n_with_threshold if request.confidence_threshold is not None else request.top_n
+        top_n = effective_top_n(request.top_n, request.confidence_threshold, settings.max_top_n_with_threshold)
         task = asyncio.create_task(
-            pipeline.classify(request.description, effective_top_n, on_step=on_step)
+            pipeline.classify(request.description, top_n, on_step=on_step)
         )
         while not task.done():
             try:
@@ -115,8 +113,7 @@ async def classify_stream(request: ClassifyRequest):
             step = step_queue.get_nowait()
             yield f"data: {json.dumps({'type': 'step', 'step': STEP_MAP[step]})}\n\n"
         result = await task
-        if request.confidence_threshold is not None:
-            result.results = [r for r in result.results if r.get("confidence", 0) >= request.confidence_threshold]
+        result.results = filter_by_confidence(result.results, request.confidence_threshold)
         response = _build_classify_results(result, settings)
         yield f"data: {json.dumps({'type': 'result', 'data': response.model_dump()})}\n\n"
 

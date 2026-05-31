@@ -2,16 +2,8 @@ import { useState } from 'react';
 import { searchHsk, getHskCode } from '../api/client';
 import type { HskCodeDetail } from '../api/types';
 import HskTree from '../components/HskTree';
+import { formatHskCode } from '../utils/hskCode';
 import './BrowsePage.css';
-
-function HskCrawler_formatCode(code: string): string {
-  code = code.trim();
-  if (code.length <= 2) return code;
-  if (code.length === 4) return `${code.slice(0, 2)}.${code.slice(2)}`;
-  if (code.length === 6) return `${code.slice(0, 4)}.${code.slice(4)}`;
-  if (code.length >= 8) return `${code.slice(0, 4)}.${code.slice(4, 6)}-${code.slice(6)}`;
-  return code;
-}
 
 export default function BrowsePage() {
   const [query, setQuery] = useState('');
@@ -86,7 +78,7 @@ export default function BrowsePage() {
               <div className="detail-parent">
                 <span className="detail-meta-label">상위 코드</span>
                 <button className="parent-link" onClick={() => handleSelect(selected.parent_code!)}>
-                  {HskCrawler_formatCode(selected.parent_code!)}
+                  {formatHskCode(selected.parent_code!)}
                 </button>
               </div>
             )}

@@ -52,4 +52,4 @@ class KeywordExtractor:
             except Exception as e:
                 last_error = e
                 logger.warning(f"키워드 추출 재시도 {attempt + 1}/{max_retries + 1}: {e}")
-        raise last_error
+        raise last_error or RuntimeError("키워드 추출 실패")

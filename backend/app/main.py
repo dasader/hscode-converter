@@ -1,9 +1,9 @@
-import asyncio
 import glob
 import os
 import sqlite3
 import threading
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router, ensure_data_dirs, get_pipeline
@@ -109,47 +109,48 @@ def _auto_load_sync(settings: Settings) -> None:
         state.loading_status = {"state": "error", "message": str(e)}
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _batch_worker
+    try:
+        settings = Settings()
+        ensure_data_dirs(settings)
+
+        thread = threading.Thread(target=_auto_load_sync, args=(settings,), daemon=True)
+        thread.start()
+
+        batch_db_path = os.path.join(os.path.dirname(settings.sqlite_db_path), "batch.db")
+        batch_db = BatchDB(batch_db_path)
+        batch_service = BatchService(batch_db)
+        rate_limiter = TokenBucketLimiter(rpm=500, tpm=500000)
+        pipeline = get_pipeline(settings)
+        _batch_worker = BatchWorker(
+            db=batch_db, pipeline=pipeline, settings=settings,
+            num_workers=5, rate_limiter=rate_limiter,
+        )
+        init_batch(batch_db, batch_service, _batch_worker)
+
+        await _batch_worker.start()
+
+        recovered = batch_db.recover_incomplete_items()
+        if recovered:
+            logger.info(f"미완료 배치 작업 {len(recovered)}건 복원")
+            await _batch_worker.enqueue_items(recovered)
+
+    except Exception as e:
+        logger.error(f"시작 실패: {e}", exc_info=True)
+
+    yield
+
+    if _batch_worker:
+        await _batch_worker.stop()
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="HSCode Connector", version="1.0.0")
+    app = FastAPI(title="HSCode Connector", version="1.0.0", lifespan=lifespan)
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
     app.include_router(router, prefix="/api/v1")
     app.include_router(batch_router, prefix="/api/v1")
-
-    @app.on_event("startup")
-    async def startup():
-        global _batch_worker
-        try:
-            settings = Settings()
-            ensure_data_dirs(settings)
-
-            thread = threading.Thread(target=_auto_load_sync, args=(settings,), daemon=True)
-            thread.start()
-
-            batch_db_path = os.path.join(os.path.dirname(settings.sqlite_db_path), "batch.db")
-            batch_db = BatchDB(batch_db_path)
-            batch_service = BatchService(batch_db)
-            rate_limiter = TokenBucketLimiter(rpm=500, tpm=500000)
-            pipeline = get_pipeline(settings)
-            _batch_worker = BatchWorker(
-                db=batch_db, pipeline=pipeline, settings=settings,
-                num_workers=5, rate_limiter=rate_limiter,
-            )
-            init_batch(batch_db, batch_service, _batch_worker)
-
-            await _batch_worker.start()
-
-            recovered = batch_db.recover_incomplete_items()
-            if recovered:
-                logger.info(f"미완료 배치 작업 {len(recovered)}건 복원")
-                await _batch_worker.enqueue_items(recovered)
-
-        except Exception as e:
-            logger.error(f"시작 실패: {e}", exc_info=True)
-
-    @app.on_event("shutdown")
-    async def shutdown():
-        if _batch_worker:
-            await _batch_worker.stop()
 
     @app.get("/health")
     async def health():

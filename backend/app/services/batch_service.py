@@ -2,6 +2,7 @@ import json
 import logging
 from openpyxl import Workbook, load_workbook
 from app.data.batch_db import BatchDB
+from app.services.result_builder import filter_by_confidence
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +65,7 @@ class BatchService:
             result_data = json.loads(item["result_json"]) if item["result_json"] else None
             codes = []
             if result_data and item["status"] == "completed":
-                results = result_data.get("results", [])
-                if confidence_threshold is not None:
-                    results = [r for r in results if r.get("confidence", 0) >= confidence_threshold]
+                results = filter_by_confidence(result_data.get("results", []), confidence_threshold)
                 codes = [r["hsk_code"] for r in results]
             keywords = ", ".join(result_data.get("keywords_extracted", [])) if result_data else ""
             parsed_items.append({
@@ -102,9 +101,7 @@ class BatchService:
         for p in parsed_items:
             item = p["item"]
             if item["status"] == "completed" and p["results"]:
-                results = p["results"]
-                if confidence_threshold is not None:
-                    results = [r for r in results if r.get("confidence", 0) >= confidence_threshold]
+                results = filter_by_confidence(p["results"], confidence_threshold)
                 for r in results:
                     ws_detail.append([
                         item["task_name"] or "",

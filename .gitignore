@@ -38,3 +38,6 @@ test_batch_*.xlsx
 
 # Misc
 *.log
+
+# Generated reports
+simplify-report-*.html
